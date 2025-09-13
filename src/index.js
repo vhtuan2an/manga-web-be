@@ -2,6 +2,10 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const routes = require('./routes');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 const app = express();
 
@@ -12,6 +16,8 @@ app.use(express.json()); // Parsing JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parsing form data
     
 const PORT = process.env.PORT || 3001;
+
+routes(app);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
