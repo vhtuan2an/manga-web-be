@@ -153,6 +153,32 @@ class MangaService {
             };
         }
     }
+
+    async getMangaById(mangaId) {
+        try {
+            const manga = await Manga.findById(mangaId)
+                .populate('genres', 'name')
+                .populate('uploaderId', 'username email')
+                .lean();
+
+            if (!manga) {
+                return {
+                    status: 'error',
+                    message: 'Manga not found'
+                };
+            }
+
+            return {
+                status: 'success',
+                data: manga
+            };
+        } catch (error) {
+            return {
+                status: 'error',
+                message: 'Failed to retrieve manga details: ' + error.message
+            };
+        }
+    }
 }
 
 module.exports = new MangaService();
