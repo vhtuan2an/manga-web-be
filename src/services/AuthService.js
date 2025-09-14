@@ -56,6 +56,47 @@ class AuthService {
       };
     }
   }
+
+  async login(email, password) {
+    try {
+      if (!email || !password) {
+        return {
+          status: "error",
+          message: "All fields are required"
+        };
+      }
+      const user = await User.findOne({ email });
+      if (!user) {
+        return {
+          status: "error",
+          message: "User not found"
+        };
+      }
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return {
+          status: "error",
+          message: "Invalid credentials"
+        };
+      }
+      const accessToken = jwt.sign({ id: user._id, role: user.role }, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1d"
+      });
+      return {
+        status: "success",
+        message: "Login successful",
+        data: {
+          user,
+          accessToken
+        }
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        message: "Login failed: " + error.message
+      };
+    }
+  }
 }
 
 module.exports = new AuthService();
