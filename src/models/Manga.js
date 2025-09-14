@@ -14,7 +14,7 @@ const mangaSchema = new mongoose.Schema(
             type: String,
             default: "Unknown"
         },
-        coverImageUrl: {
+        coverImage: {
             type: String,
             default: "",
         },
