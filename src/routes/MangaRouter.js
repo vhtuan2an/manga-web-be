@@ -5,6 +5,7 @@ const { uploadSingle } = require('../middlewares/UploadMiddlewares');
 const router = express.Router();
 
 router.post('/', authMiddleware(['uploader']), uploadSingle, MangaController.createManga);
+router.get('/', MangaController.getMangaList);
 router.put('/:id/cover', authMiddleware(['uploader']), uploadSingle, MangaController.updateMangaCover);
 
 module.exports = router;
