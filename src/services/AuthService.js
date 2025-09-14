@@ -97,6 +97,27 @@ class AuthService {
       };
     }
   }
+
+  async getUserById(userId) {
+    try {
+      const user = await User.findById(userId).select('-password');
+      if (!user) {
+        return {
+          status: "error",
+          message: "User not found"
+        };
+      }
+      return {
+        status: "success",
+        data: user
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        message: "Error fetching user: " + error.message
+      };
+    }
+  }
 }
 
 module.exports = new AuthService();

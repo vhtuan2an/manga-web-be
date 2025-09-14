@@ -19,6 +19,15 @@ class AuthController {
         }
         return res.status(200).json(result);
     }
+
+    async getUserInfo(req, res) {
+        const userId = req.id;
+        const result = await AuthService.getUserById(userId);
+        if (result.status === 'error') {
+            return res.status(404).json(result);
+        }
+        return res.status(200).json(result);
+    }
 }
 
 module.exports = new AuthController();
