@@ -16,11 +16,11 @@ const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
+        fileSize: 20 * 1024 * 1024 // 20MB limit
     }
 });
 
 module.exports = {
     uploadSingle: upload.single('coverImage'),
-    uploadMultiple: upload.array('chapterImages', 50) // tối đa 50 ảnh cho chapter
+    uploadMultiple: upload.array('pages', 100) // tối đa 100 ảnh cho chapter
 };
