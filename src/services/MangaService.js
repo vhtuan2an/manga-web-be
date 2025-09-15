@@ -220,6 +220,36 @@ class MangaService {
             };
         }
     }
+
+    async deleteManga(mangaId) {
+        try {
+            const manga = await Manga.findById(mangaId);
+            if (!manga) {
+                return {
+                    status: 'error',
+                    message: 'Manga not found'
+                };
+            }
+            // Delete cover image from Cloudinary if exists
+            if (manga.coverImage) {
+                const publicId = this.extractPublicIdFromUrl(manga.coverImage);
+                if (publicId) {
+                    await CloudinaryUtils.deleteImage(publicId);
+                }
+            }
+
+            await Manga.findByIdAndDelete(mangaId);
+            return {
+                status: 'success',
+                message: 'Manga deleted successfully'
+            };
+        } catch (error) {
+            return {
+                status: 'error',
+                message: 'Failed to delete manga: ' + error.message
+            };
+        }
+    }
 }
 
 module.exports = new MangaService();
