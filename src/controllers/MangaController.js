@@ -48,21 +48,17 @@ class MangaController {
     async updateManga(req, res) {
         try {
             const { id } = req.params;
-            
-            // Log để debug
-            console.log('req.body:', req.body);
-            console.log('req.file:', req.file);
 
             let updateData = { ...req.body };
             
-            // Xử lý genres từ form-data (nếu có)
+            // Handle genres processing
             if (req.body.genres) {
                 if (typeof req.body.genres === 'string') {
                     try {
-                        // Nếu là JSON string
+                        // If it's a JSON string
                         updateData.genres = JSON.parse(req.body.genres);
                     } catch {
-                        // Nếu là string với dấu phẩy
+                        // If it's a comma-separated string
                         updateData.genres = req.body.genres.split(',').map(id => id.trim());
                     }
                 }
@@ -78,32 +74,6 @@ class MangaController {
             const result = await MangaService.updateManga(id, updateData, coverImageBuffer);
             if (result.status === 'error') {
                 return res.status(422).json(result);
-            }
-            return res.status(200).json(result);
-        } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
-        }
-    }
-
-    // Deprecated - keep for backward compatibility
-    async updateMangaCover(req, res) {
-        try {
-            const { id } = req.params;
-            const coverImage = req.file;
-
-            if (!coverImage) {
-                return res.status(400).json({
-                    status: 'error',
-                    message: 'Cover image is required'
-                });
-            }
-
-            const result = await MangaService.updateMangaCover(id, coverImage.buffer);
-            if (result.status === 'error') {
-                return res.status(404).json(result);
             }
             return res.status(200).json(result);
         } catch (error) {

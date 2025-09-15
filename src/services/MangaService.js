@@ -125,11 +125,6 @@ class MangaService {
         }
     }
 
-    // Deprecated - keep for backward compatibility
-    async updateMangaCover(mangaId, coverImageBuffer) {
-        return await this.updateManga(mangaId, {}, coverImageBuffer);
-    }
-
     async getMangaList(filter = {}) {
         try {
             const { 
