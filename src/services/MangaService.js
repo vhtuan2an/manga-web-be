@@ -43,7 +43,7 @@ class MangaService {
         }
     }
 
-    async updateMangaCover(mangaId, coverImageBuffer) {
+    async updateManga(mangaId, updateData, coverImageBuffer = null) {
         try {
             const manga = await Manga.findById(mangaId);
             if (!manga) {
@@ -53,35 +53,81 @@ class MangaService {
                 };
             }
 
-            // Delete old cover if exists
-            if (manga.coverImage) {
-                const publicId = this.extractPublicIdFromUrl(manga.coverImage);
-                if (publicId) {
-                    await CloudinaryUtils.deleteImage(publicId);
+            // Process genres data if provided
+            if (updateData.genres) {
+                let processedGenres = [];
+                if (typeof updateData.genres === 'string') {
+                    try {
+                        if (updateData.genres.startsWith('[') && updateData.genres.endsWith(']')) {
+                            const genreArray = JSON.parse(updateData.genres);
+                            processedGenres = genreArray.map(id => new mongoose.Types.ObjectId(id.trim()));
+                        } else {
+                            processedGenres = updateData.genres
+                                .split(',')
+                                .map(id => new mongoose.Types.ObjectId(id.trim()));
+                        }
+                    } catch (parseError) {
+                        return {
+                            status: 'error',
+                            message: 'Invalid genres format. Please provide valid ObjectIds.'
+                        };
+                    }
+                } else if (Array.isArray(updateData.genres)) {
+                    processedGenres = updateData.genres.map(id => {
+                        if (mongoose.Types.ObjectId.isValid(id)) {
+                            return new mongoose.Types.ObjectId(id);
+                        } else {
+                            throw new Error(`Invalid ObjectId: ${id}`);
+                        }
+                    });
                 }
+                updateData.genres = processedGenres;
             }
 
-            // Upload new cover
-            const uploadResult = await CloudinaryUtils.uploadImage(
-                coverImageBuffer, 
-                'manga/covers', 
-                `cover_${mangaId}`
-            );
+            // Handle cover image update if provided
+            if (coverImageBuffer) {
+                // Delete old cover if exists
+                if (manga.coverImage) {
+                    const publicId = this.extractPublicIdFromUrl(manga.coverImage);
+                    if (publicId) {
+                        await CloudinaryUtils.deleteImage(publicId);
+                    }
+                }
 
-            manga.coverImage = uploadResult.secure_url;
-            await manga.save();
+                // Upload new cover
+                const uploadResult = await CloudinaryUtils.uploadImage(
+                    coverImageBuffer, 
+                    'manga/covers', 
+                    `cover_${mangaId}`
+                );
+                updateData.coverImage = uploadResult.secure_url;
+            }
+
+            // Update manga with new data
+            const updatedManga = await Manga.findByIdAndUpdate(
+                mangaId,
+                updateData,
+                { new: true, runValidators: true }
+            )
+            .populate('genres', 'name')
+            .populate('uploaderId', 'username email');
 
             return {
                 status: 'success',
-                message: 'Cover image updated successfully',
-                data: manga
+                message: 'Manga updated successfully',
+                data: updatedManga
             };
         } catch (error) {
             return {
                 status: 'error',
-                message: 'Failed to update cover: ' + error.message
+                message: 'Failed to update manga: ' + error.message
             };
         }
+    }
+
+    // Deprecated - keep for backward compatibility
+    async updateMangaCover(mangaId, coverImageBuffer) {
+        return await this.updateManga(mangaId, {}, coverImageBuffer);
     }
 
     async getMangaList(filter = {}) {

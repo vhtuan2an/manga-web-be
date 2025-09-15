@@ -45,6 +45,50 @@ class MangaController {
         }
     }
 
+    async updateManga(req, res) {
+        try {
+            const { id } = req.params;
+            
+            // Log để debug
+            console.log('req.body:', req.body);
+            console.log('req.file:', req.file);
+
+            let updateData = { ...req.body };
+            
+            // Xử lý genres từ form-data (nếu có)
+            if (req.body.genres) {
+                if (typeof req.body.genres === 'string') {
+                    try {
+                        // Nếu là JSON string
+                        updateData.genres = JSON.parse(req.body.genres);
+                    } catch {
+                        // Nếu là string với dấu phẩy
+                        updateData.genres = req.body.genres.split(',').map(id => id.trim());
+                    }
+                }
+            }
+
+            // Xử lý cover image (nếu có)
+            const coverImage = req.file;
+            let coverImageBuffer = null;
+            if (coverImage) {
+                coverImageBuffer = coverImage.buffer;
+            }
+
+            const result = await MangaService.updateManga(id, updateData, coverImageBuffer);
+            if (result.status === 'error') {
+                return res.status(422).json(result);
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(500).json({
+                status: 'error',
+                message: 'Internal server error: ' + error.message
+            });
+        }
+    }
+
+    // Deprecated - keep for backward compatibility
     async updateMangaCover(req, res) {
         try {
             const { id } = req.params;

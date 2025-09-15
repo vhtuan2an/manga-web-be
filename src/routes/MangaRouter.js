@@ -7,6 +7,8 @@ const router = express.Router();
 router.post('/', authMiddleware(['uploader']), uploadSingle, MangaController.createManga);
 router.get('/', MangaController.getMangaList);
 router.get('/:id', MangaController.getMangaById);
+router.put('/:id', authMiddleware(['uploader']), uploadSingle, MangaController.updateManga);
+// Deprecated route - keep for backward compatibility
 router.put('/:id/cover', authMiddleware(['uploader']), uploadSingle, MangaController.updateMangaCover);
 
 module.exports = router;
