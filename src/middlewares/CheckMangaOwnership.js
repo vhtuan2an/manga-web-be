@@ -3,7 +3,8 @@ const MangaService = require('../services/MangaService');
 
 const checkMangaOwnership = async (req, res, next) => {
     try {
-        const mangaId = req.params.id;
+        console.log('Checking manga ownership for user:', { id: req.id, role: req.role });
+        const mangaId = req.params.mangaId || req.params.id;
         const userId = req.id;
         const userRole = req.role;
 
