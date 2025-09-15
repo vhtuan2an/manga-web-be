@@ -1,3 +1,4 @@
+const { uploader } = require('../config/cloudinary');
 const MangaService = require('../services/MangaService');
 
 class MangaController {
@@ -7,7 +8,10 @@ class MangaController {
             console.log('req.body:', req.body);
             console.log('req.file:', req.file);
 
-            let mangaData = { ...req.body };
+            let mangaData = { 
+                uploaderId: req.id,
+                ...req.body 
+            };
             
             // Xử lý genres từ form-data
             if (req.body.genres) {
@@ -122,6 +126,22 @@ class MangaController {
             const result = await MangaService.deleteManga(id);
             if (result.status === 'error') {
                 return res.status(404).json(result);
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(500).json({
+                status: 'error',
+                message: 'Internal server error: ' + error.message
+            });
+        }
+    }
+
+    async getChapterList(req, res) {
+        try {
+            const { mangaId } = req.params;
+            const result = await MangaService.getChapterList(mangaId);
+            if (result.status === 'error') {
+                return res.status(422).json(result);
             }
             return res.status(200).json(result);
         } catch (error) {
