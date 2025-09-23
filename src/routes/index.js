@@ -3,6 +3,7 @@ const MangaRouter = require('./MangaRouter');
 const ChapterRouter = require('./ChapterRouter');
 const UserRouter = require('./UserRouter');
 const GenreRouter = require('./GenreRouter');
+const CommentRouter = require('./CommentRouter');
 
 const routes = (app) => {
     app.use('/api/auth', AuthRouter);
@@ -10,6 +11,7 @@ const routes = (app) => {
     app.use('/api/chapters', ChapterRouter);
     app.use('/api/users', UserRouter);
     app.use('/api/genres', GenreRouter);
+    app.use('/api/comments', CommentRouter);
 }
 
 module.exports = routes;
