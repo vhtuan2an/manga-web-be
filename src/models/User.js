@@ -31,6 +31,9 @@ const userSchema = new mongoose.Schema(
         ref: "Manga",
       },
     ],
+    fcmTokens: [{
+      type: String,
+    }],
     readingHistory: [
       {
         manga: {
