@@ -20,6 +20,7 @@ class GoogleAIUtils {
             const genreResult = await model.generateContent(genrePrompt);
             const genreResponse = await genreResult.response;
             const genreResponseText = genreResponse.text();
+            console.log('Genre Response:', genreResponseText);
             
             // Parse genres from AI response
             let suggestedGenres = [];
@@ -42,22 +43,25 @@ class GoogleAIUtils {
                 return { suggestedGenres: [], recommendedMangas: [] };
             }
 
+            console.log('Suggested Genres:', suggestedGenres);
+
             // Step 2: Find genre IDs
             const matchedGenres = await Genre.find({ 
                 name: { $in: suggestedGenres } 
             }).select('_id name').lean();
-            
+            console.log('Matched Genres from DB:', matchedGenres);
             const genreIds = matchedGenres.map(g => g._id);
 
             // Step 3: Find mangas with those genres
             const mangas = await Manga.find({
                 genres: { $in: genreIds },
-                status: 'active' // Only get active mangas
+                status: 'ongoing' // Only get active mangas
             })
             .select('_id name description genres')
             .populate('genres', 'name')
             .limit(20) // Limit to prevent too much data
             .lean();
+            console.log(`Found ${mangas.length} mangas matching genres.`);
 
             if (mangas.length === 0) {
                 return { suggestedGenres, recommendedMangas: [] };
@@ -70,6 +74,7 @@ class GoogleAIUtils {
                 description: manga.description,
                 genres: manga.genres.map(g => g.name).join(', ')
             }));
+            console.log('Manga Data for Recommendation:', mangaData);
 
             // Step 5: Get AI recommendation based on available mangas
             const recommendationPrompt = `Dựa trên mô tả người dùng: "${description}"
@@ -95,8 +100,10 @@ Trả lời dưới dạng JSON với format:
 }`;
 
             const recommendationResult = await model.generateContent(recommendationPrompt);
+            console.log('Recommendation Result:', recommendationResult);
             const recommendationResponse = await recommendationResult.response;
             const recommendationText = recommendationResponse.text();
+            console.log('Recommendation Response:', recommendationText);
 
             // Parse recommendation response
             let recommendedMangas = [];
@@ -116,8 +123,7 @@ Trả lời dưới dạng JSON với format:
 
             return {
                 suggestedGenres,
-                recommendedMangas,
-                totalAvailableMangas: mangas.length
+                recommendedMangas
             };
 
         } catch (error) {
