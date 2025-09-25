@@ -54,8 +54,7 @@ class GoogleAIUtils {
 
             // Step 3: Find mangas with those genres
             const mangas = await Manga.find({
-                genres: { $in: genreIds },
-                status: 'ongoing' // Only get active mangas
+                genres: { $in: genreIds }
             })
             .select('_id name description genres')
             .populate('genres', 'name')
