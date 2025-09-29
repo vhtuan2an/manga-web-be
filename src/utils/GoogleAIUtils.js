@@ -45,14 +45,14 @@ class GoogleAIUtils {
 
             console.log('Suggested Genres:', suggestedGenres);
 
-            // Step 2: Find genre IDs
+            // Find genre IDs
             const matchedGenres = await Genre.find({ 
                 name: { $in: suggestedGenres } 
             }).select('_id name').lean();
             console.log('Matched Genres from DB:', matchedGenres);
             const genreIds = matchedGenres.map(g => g._id);
 
-            // Step 3: Find mangas with those genres
+            // Find mangas with those genres
             const mangas = await Manga.find({
                 genres: { $in: genreIds }
             })
@@ -66,7 +66,7 @@ class GoogleAIUtils {
                 return { suggestedGenres, recommendedMangas: [] };
             }
 
-            // Step 4: Format manga data for AI prompt
+            // Format manga data for AI prompt
             const mangaData = mangas.map(manga => ({
                 id: manga._id,
                 name: manga.name,
@@ -75,7 +75,7 @@ class GoogleAIUtils {
             }));
             console.log('Manga Data for Recommendation:', mangaData);
 
-            // Step 5: Get AI recommendation based on available mangas
+            // Get AI recommendation based on available mangas
             const recommendationPrompt = `Dựa trên mô tả người dùng: "${description}"
 
 Và danh sách manga hiện có sau đây:
