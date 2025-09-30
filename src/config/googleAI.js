@@ -7,7 +7,7 @@ dotenv.config();
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
 
 // Get the Gemini model
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 
 module.exports = {
     genAI,
