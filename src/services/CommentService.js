@@ -3,19 +3,38 @@ const AuthService = require('./AuthService');
 
 class CommentService {
     async createComment(data) {
-        const { userId, manga, chapter, content, accessToken } = data;
-        if (!userId && !accessToken) {
-            return { status: 'error', message: 'Missing auth token' };
+        const { userId, manga, chapter, content } = data;
+        if (!userId) {
+            return { status: 'error', message: 'User id required' };
         }
-        else if (!content) {
-            return { status: 'error', message: 'Missing content' };
+        if (!content || !content.trim()) {
+            return { status: 'error', message: 'Content is required' };
         }
-        else if (!manga && !chapter) {
+        if (!manga && !chapter) {
             return { status: 'error', message: 'Must specify either manga or chapter' };
         }
-        const comment = new Comment({ user: userId, manga, chapter, content });
+
+        const userResult = await AuthService.getUserById(userId);
+        if (userResult.status === 'error') {
+            return { status: 'error', message: 'User not found' };
+        }
+        const user = userResult.data;
+
+        const allowedRoles = ['reader', 'uploader', 'admin'];
+        if (!allowedRoles.includes(user.role)) {
+            return { status: 'error', message: 'User role not permitted to comment' };
+        }
+
+        // Create and save comment
+        const comment = new Comment({
+            user: userId,
+            manga: manga || undefined,
+            chapter: chapter || undefined,
+            content: content.trim()
+        });
         await comment.save();
-        return { status: 'success', data: comment };
+        const populated = await comment.populate('user', 'username role');
+        return { status: 'success', data: populated };
     }
 
     async getCommentsByManga(mangaId) {
