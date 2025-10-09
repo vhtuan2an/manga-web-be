@@ -44,6 +44,17 @@ class ChapterService {
                 };
             }
 
+            // Validate file sizes (limit to 10MB per file)
+            const maxFileSize = 10 * 1024 * 1024; // 10MB
+            for (const file of files) {
+                if (file.size > maxFileSize) {
+                    return {
+                        status: 'error',
+                        message: `File ${file.originalname} is too large. Maximum size is 10MB.`
+                    };
+                }
+            }
+
             // Sort files by page number extracted from filename
             const sortedFiles = files.sort((a, b) => {
                 const pageA = this.extractPageNumber(a.originalname);
@@ -51,24 +62,52 @@ class ChapterService {
                 return pageA - pageB;
             });
 
-            // Upload images to Cloudinary
-            const uploadPromises = sortedFiles.map(async (file, index) => {
-                const pageNumber = index + 1; // Use sequential numbering
-                const fileName = `${mangaId}_chapter_${chapterNumber}_page_${pageNumber.toString().padStart(2, '0')}`;
+            console.log(`Starting upload of ${sortedFiles.length} images...`);
+
+            // Upload images to Cloudinary with batch processing (15 at a time)
+            const batchSize = 15;
+            const pages = [];
+            
+            for (let i = 0; i < sortedFiles.length; i += batchSize) {
+                const batch = sortedFiles.slice(i, i + batchSize);
+                console.log(`Uploading batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(sortedFiles.length/batchSize)}`);
                 
-                const uploadResult = await CloudinaryUtils.uploadImage(
-                    file.buffer,
-                    `manga/chapters/${mangaId}`,
-                    fileName
-                );
+                const batchPromises = batch.map(async (file, batchIndex) => {
+                    const actualIndex = i + batchIndex;
+                    const pageNumber = actualIndex + 1;
+                    const fileName = `${mangaId}_chapter_${chapterNumber}_page_${pageNumber.toString().padStart(2, '0')}`;
+                    
+                    try {
+                        const uploadResult = await this.uploadWithRetry(
+                            file.buffer,
+                            `manga/chapters/${mangaId}`,
+                            fileName,
+                            3 // max retries
+                        );
 
-                return {
-                    pageNumber,
-                    image: uploadResult.secure_url
-                };
-            });
+                        return {
+                            pageNumber,
+                            image: uploadResult.secure_url
+                        };
+                    } catch (uploadError) {
+                        console.error(`Failed to upload page ${pageNumber}:`, uploadError.message);
+                        throw new Error(`Failed to upload page ${pageNumber}: ${uploadError.message}`);
+                    }
+                });
 
-            const pages = await Promise.all(uploadPromises);
+                try {
+                    const batchResults = await Promise.all(batchPromises);
+                    pages.push(...batchResults);
+                } catch (batchError) {
+                    console.error('Batch upload failed:', batchError);
+                    throw new Error(`Batch upload failed: ${batchError.message}`);
+                }
+            }
+
+            console.log(`Successfully uploaded ${pages.length} images`);
+
+            // Sort pages by page number
+            pages.sort((a, b) => a.pageNumber - b.pageNumber);
 
             // Create new chapter
             const chapter = new Chapter({
@@ -91,10 +130,34 @@ class ChapterService {
             };
 
         } catch (error) {
+            console.error('Chapter upload error:', error);
             return {
                 status: 'error',
                 message: 'Failed to upload chapter: ' + error.message
             };
+        }
+    }
+
+    // Helper method to upload with retry logic
+    async uploadWithRetry(buffer, folder, fileName, maxRetries = 3, delay = 1000) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`Upload attempt ${attempt}/${maxRetries} for ${fileName}`);
+                const result = await CloudinaryUtils.uploadImage(buffer, folder, fileName);
+                console.log(`Successfully uploaded ${fileName}`);
+                return result;
+            } catch (error) {
+                console.error(`Upload attempt ${attempt} failed for ${fileName}:`, error.message);
+                
+                if (attempt === maxRetries) {
+                    throw error;
+                }
+                
+                // Wait before retry (exponential backoff)
+                const waitTime = delay * Math.pow(2, attempt - 1);
+                console.log(`Waiting ${waitTime}ms before retry...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
         }
     }
 
@@ -146,17 +209,21 @@ class ChapterService {
 
             // Update pages if new files are provided
             if (files && files.length > 0) {
-                // Delete old images from Cloudinary
-                for (const page of chapter.pages) {
-                    try {
-                        const publicId = this.extractPublicIdFromUrl(page.image);
-                        if (publicId) {
-                            await CloudinaryUtils.deleteImage(publicId);
-                        }
-                    } catch (deleteError) {
-                        console.warn('Failed to delete old image:', deleteError.message);
+                // Validate file sizes
+                const maxFileSize = 10 * 1024 * 1024; // 10MB
+                for (const file of files) {
+                    if (file.size > maxFileSize) {
+                        return {
+                            status: 'error',
+                            message: `File ${file.originalname} is too large. Maximum size is 10MB.`
+                        };
                     }
                 }
+
+                console.log(`Updating chapter with ${files.length} new images...`);
+
+                // Delete old images from Cloudinary (in background)
+                this.deleteOldImages(chapter.pages);
 
                 // Sort new files by page number
                 const sortedFiles = files.sort((a, b) => {
@@ -165,24 +232,39 @@ class ChapterService {
                     return pageA - pageB;
                 });
 
-                // Upload new images to Cloudinary
-                const uploadPromises = sortedFiles.map(async (file, index) => {
-                    const pageNumber = index + 1;
-                    const fileName = `${chapter.mangaId._id}_chapter_${updateData.chapterNumber || chapter.chapterNumber}_page_${pageNumber.toString().padStart(2, '0')}`;
+                // Upload new images with batch processing
+                const batchSize = 15;
+                const pages = [];
+                
+                for (let i = 0; i < sortedFiles.length; i += batchSize) {
+                    const batch = sortedFiles.slice(i, i + batchSize);
+                    console.log(`Uploading batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(sortedFiles.length/batchSize)}`);
                     
-                    const uploadResult = await CloudinaryUtils.uploadImage(
-                        file.buffer,
-                        `manga/chapters/${chapter.mangaId._id}`,
-                        fileName
-                    );
+                    const batchPromises = batch.map(async (file, batchIndex) => {
+                        const actualIndex = i + batchIndex;
+                        const pageNumber = actualIndex + 1;
+                        const fileName = `${chapter.mangaId._id}_chapter_${updateData.chapterNumber || chapter.chapterNumber}_page_${pageNumber.toString().padStart(2, '0')}`;
+                        
+                        const uploadResult = await this.uploadWithRetry(
+                            file.buffer,
+                            `manga/chapters/${chapter.mangaId._id}`,
+                            fileName,
+                            3
+                        );
 
-                    return {
-                        pageNumber,
-                        image: uploadResult.secure_url
-                    };
-                });
+                        return {
+                            pageNumber,
+                            image: uploadResult.secure_url
+                        };
+                    });
 
-                updateData.pages = await Promise.all(uploadPromises);
+                    const batchResults = await Promise.all(batchPromises);
+                    pages.push(...batchResults);
+                }
+
+                // Sort pages by page number
+                pages.sort((a, b) => a.pageNumber - b.pageNumber);
+                updateData.pages = pages;
             }
 
             // Update updatedAt timestamp
@@ -202,6 +284,7 @@ class ChapterService {
             };
 
         } catch (error) {
+            console.error('Chapter update error:', error);
             return {
                 status: 'error',
                 message: 'Failed to update chapter: ' + error.message
@@ -209,9 +292,27 @@ class ChapterService {
         }
     }
 
+    // Helper method to delete old images in background
+    async deleteOldImages(pages) {
+        // Run deletion in background without blocking the main process
+        setTimeout(async () => {
+            for (const page of pages) {
+                try {
+                    const publicId = this.extractPublicIdFromUrl(page.image);
+                    if (publicId) {
+                        await CloudinaryUtils.deleteImage(publicId);
+                        console.log(`Deleted old image: ${publicId}`);
+                    }
+                } catch (deleteError) {
+                    console.warn('Failed to delete old image:', deleteError.message);
+                }
+            }
+        }, 100);
+    }
+
     // Helper method to extract page number from filename
     extractPageNumber(filename) {
-        const match = filename.match(/page_(\d+)/i);
+        const match = filename.match(/page_(\d+)/i) || filename.match(/(\d+)/);
         return match ? parseInt(match[1]) : 0;
     }
 
