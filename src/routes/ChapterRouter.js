@@ -6,6 +6,7 @@ const { checkMangaOwnership } = require('../middlewares/CheckMangaOwnership');
 const router = express.Router();
 
 router.post('/:mangaId', authMiddleware(["uploader"]), checkMangaOwnership, uploadMultiple, ChapterController.uploadChapter);
+router.put('/:chapterId', authMiddleware(["uploader"]), uploadMultiple, ChapterController.updateChapter);
 
 module.exports = router;
 
@@ -77,6 +78,67 @@ module.exports = router;
  *         description: Manga not found
  *       422:
  *         description: Validation error (missing data or files)
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/chapters/{chapterId}:
+ *   put:
+ *     summary: Update an existing chapter
+ *     tags: [Chapters]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chapterId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Chapter ID to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               chapterNumber:
+ *                 type: number
+ *                 description: Updated chapter number
+ *                 example: 2
+ *               title:
+ *                 type: string
+ *                 description: Updated chapter title
+ *                 example: "The Beginning - Revised"
+ *               pages:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Updated chapter page images (optional - if not provided, existing pages will be kept)
+ *     responses:
+ *       200:
+ *         description: Chapter updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   $ref: '#/components/schemas/Chapter'
+ *       401:
+ *         description: Authentication required (uploader role)
+ *       403:
+ *         description: Not authorized to update this chapter
+ *       404:
+ *         description: Chapter not found
+ *       422:
+ *         description: Validation error
  *       500:
  *         description: Internal server error
  */

@@ -28,6 +28,38 @@ class ChapterController {
             });
         }
     }
+
+    async updateChapter(req, res) {
+        try {
+            const { chapterId } = req.params;
+            const chapterData = req.body;
+            const files = req.files;
+            const userId = req.id;
+
+            console.log('Update chapter request:', {
+                chapterId,
+                chapterData,
+                filesCount: files ? files.length : 0,
+                userId
+            });
+
+            const result = await ChapterService.updateChapter(chapterId, chapterData, files, userId);
+
+            if (result.status === 'error') {
+                const statusCode = result.message.includes('not found') ? 404 : 
+                                 result.message.includes('not authorized') ? 403 : 422;
+                return res.status(statusCode).json(result);
+            }
+
+            return res.status(200).json(result);
+
+        } catch (error) {
+            return res.status(500).json({
+                status: 'error',
+                message: 'Internal server error: ' + error.message
+            });
+        }
+    }
 }
 
 module.exports = new ChapterController();
