@@ -29,6 +29,23 @@ class ChapterController {
         }
     }
 
+    async getChapterById(req, res) {
+        try {
+            const { chapterId } = req.params;
+            const result = await ChapterService.getChapterById(chapterId);
+
+            if (result.status === 'error') {
+                return res.status(404).json(result);
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(500).json({
+                status: 'error',
+                message: 'Internal server error: ' + error.message
+            });
+        }
+    }
+
     async updateChapter(req, res) {
         try {
             const { chapterId } = req.params;

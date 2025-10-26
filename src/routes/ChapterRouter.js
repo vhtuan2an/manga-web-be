@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.post('/:mangaId', authMiddleware(["uploader"]), checkMangaOwnership, uploadMultiple, ChapterController.uploadChapter);
 router.put('/:chapterId', authMiddleware(["uploader"]), uploadMultiple, ChapterController.updateChapter);
+router.get('/:chapterId', ChapterController.getChapterById);
 
 module.exports = router;
 

@@ -161,6 +161,29 @@ class ChapterService {
         }
     }
 
+    async getChapterById(chapterId) {
+        try {
+            const chapter = await Chapter.findById(chapterId)
+                .lean();
+            if (!chapter) {
+                return {
+                    status: 'error',
+                    message: 'Chapter not found'
+                };
+            }
+            return {
+                status: 'success',
+                data: chapter
+            };
+        } catch (error) {
+            console.error('Error fetching chapter:', error);
+            return {
+                status: 'error',
+                message: 'Failed to fetch chapter: ' + error.message
+            };
+        }
+    }
+
     async updateChapter(chapterId, chapterData, files, userId) {
         try {
             // Find existing chapter
