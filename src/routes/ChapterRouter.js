@@ -143,3 +143,35 @@ module.exports = router;
  *       500:
  *         description: Internal server error
  */
+
+/**
+ * @swagger
+ * /api/chapters/{chapterId}:
+ *   get:
+ *     summary: Get chapter by ID
+ *     tags: [Chapters]
+ *     parameters:
+ *       - in: path
+ *         name: chapterId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Chapter ID
+ *     responses:
+ *       200:
+ *         description: Chapter retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   $ref: '#/components/schemas/Chapter'
+ *       404:
+ *         description: Chapter not found
+ *       500:
+ *         description: Internal server error
+ */
