@@ -9,13 +9,13 @@ router.post(
   "/:mangaId",
   authMiddleware(["uploader"]),
   checkMangaOwnership,
-  uploadChapterFiles, // Chỉ dùng 1 middleware
+  uploadChapterFiles,
   ChapterController.uploadChapter
 );
 router.put(
   "/:chapterId",
   authMiddleware(["uploader"]),
-  uploadChapterFiles, // Chỉ dùng 1 middleware
+  uploadChapterFiles,
   ChapterController.updateChapter
 );
 router.get("/:chapterId", ChapterController.getChapterById);
@@ -63,6 +63,10 @@ module.exports = router;
  *                 type: string
  *                 description: Chapter title
  *                 example: "The Beginning"
+ *               thumbnail:
+ *                 type: string
+ *                 format: binary
+ *                 description: Chapter thumbnail image (optional)
  *               pages:
  *                 type: array
  *                 items:
@@ -124,6 +128,10 @@ module.exports = router;
  *                 type: string
  *                 description: Updated chapter title
  *                 example: "The Beginning - Revised"
+ *               thumbnail:
+ *                 type: string
+ *                 format: binary
+ *                 description: Updated chapter thumbnail (optional)
  *               pages:
  *                 type: array
  *                 items:
