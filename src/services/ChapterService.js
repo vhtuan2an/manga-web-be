@@ -3,7 +3,7 @@ const Manga = require('../models/Manga');
 const CloudinaryUtils = require('../utils/CloudinaryUtils');
 
 class ChapterService {
-    async uploadChapter(mangaId, chapterData, files) {
+    async uploadChapter(mangaId, chapterData, files, thumbnailFile = null) {
         try {
             const { title, chapterNumber } = chapterData;
 
@@ -24,7 +24,7 @@ class ChapterService {
                 };
             }
 
-            // Check if chapter number already exists for this manga
+            // Check if chapter number already exists
             const existingChapter = await Chapter.findOne({ 
                 mangaId, 
                 chapterNumber 
@@ -36,7 +36,7 @@ class ChapterService {
                 };
             }
 
-            // Process and sort files by page number
+            // Validate pages
             if (!files || files.length === 0) {
                 return {
                     status: 'error',
@@ -44,18 +44,23 @@ class ChapterService {
                 };
             }
 
-            // Validate file sizes (limit to 10MB per file)
-            const maxFileSize = 10 * 1024 * 1024; // 10MB
-            for (const file of files) {
-                if (file.size > maxFileSize) {
-                    return {
-                        status: 'error',
-                        message: `File ${file.originalname} is too large. Maximum size is 10MB.`
-                    };
+            // Upload thumbnail if provided
+            let thumbnailUrl = '';
+            if (thumbnailFile) {
+                try {
+                    const thumbnailResult = await CloudinaryUtils.uploadImage(
+                        thumbnailFile.buffer,
+                        `manga/chapters/${mangaId}/thumbnails`,
+                        `${mangaId}_chapter_${chapterNumber}_thumbnail`
+                    );
+                    thumbnailUrl = thumbnailResult.secure_url;
+                    console.log('Thumbnail uploaded:', thumbnailUrl);
+                } catch (thumbnailError) {
+                    console.error('Failed to upload thumbnail:', thumbnailError);
                 }
             }
 
-            // Sort files by page number extracted from filename
+            // Sort and upload pages
             const sortedFiles = files.sort((a, b) => {
                 const pageA = this.extractPageNumber(a.originalname);
                 const pageB = this.extractPageNumber(b.originalname);
@@ -64,7 +69,6 @@ class ChapterService {
 
             console.log(`Starting upload of ${sortedFiles.length} images...`);
 
-            // Upload images to Cloudinary with batch processing (15 at a time)
             const batchSize = 15;
             const pages = [];
             
@@ -77,49 +81,41 @@ class ChapterService {
                     const pageNumber = actualIndex + 1;
                     const fileName = `${mangaId}_chapter_${chapterNumber}_page_${pageNumber.toString().padStart(2, '0')}`;
                     
-                    try {
-                        const uploadResult = await this.uploadWithRetry(
-                            file.buffer,
-                            `manga/chapters/${mangaId}`,
-                            fileName,
-                            3 // max retries
-                        );
+                    const uploadResult = await this.uploadWithRetry(
+                        file.buffer,
+                        `manga/chapters/${mangaId}`,
+                        fileName,
+                        3
+                    );
 
-                        return {
-                            pageNumber,
-                            image: uploadResult.secure_url
-                        };
-                    } catch (uploadError) {
-                        console.error(`Failed to upload page ${pageNumber}:`, uploadError.message);
-                        throw new Error(`Failed to upload page ${pageNumber}: ${uploadError.message}`);
-                    }
+                    return {
+                        pageNumber,
+                        image: uploadResult.secure_url
+                    };
                 });
 
-                try {
-                    const batchResults = await Promise.all(batchPromises);
-                    pages.push(...batchResults);
-                } catch (batchError) {
-                    console.error('Batch upload failed:', batchError);
-                    throw new Error(`Batch upload failed: ${batchError.message}`);
-                }
+                const batchResults = await Promise.all(batchPromises);
+                pages.push(...batchResults);
             }
 
-            console.log(`Successfully uploaded ${pages.length} images`);
-
-            // Sort pages by page number
             pages.sort((a, b) => a.pageNumber - b.pageNumber);
 
-            // Create new chapter
+            // If no thumbnail, use first page
+            if (!thumbnailUrl && pages.length > 0) {
+                thumbnailUrl = pages[0].image;
+            }
+
+            // Create chapter
             const chapter = new Chapter({
                 mangaId,
                 title,
                 chapterNumber,
-                pages
+                pages,
+                thumbnail: thumbnailUrl
             });
 
             await chapter.save();
 
-            // Populate manga info in response
             const populatedChapter = await Chapter.findById(chapter._id)
                 .populate('mangaId', 'title');
 
@@ -164,6 +160,7 @@ class ChapterService {
     async getChapterById(chapterId) {
         try {
             const chapter = await Chapter.findById(chapterId)
+                .populate('mangaId', 'title')
                 .lean();
             if (!chapter) {
                 return {
@@ -184,7 +181,8 @@ class ChapterService {
         }
     }
 
-    async updateChapter(chapterId, chapterData, files, userId) {
+    // FIXED: Thêm thumbnailFile parameter
+    async updateChapter(chapterId, chapterData, files, userId, thumbnailFile = null) {
         try {
             // Find existing chapter
             const chapter = await Chapter.findById(chapterId).populate('mangaId');
@@ -228,6 +226,37 @@ class ChapterService {
                 }
 
                 updateData.chapterNumber = chapterNumber;
+            }
+
+            // Update thumbnail if provided
+            if (thumbnailFile) {
+                try {
+                    console.log('Updating thumbnail...');
+                    
+                    // Delete old thumbnail if it exists and it's not a page image
+                    if (chapter.thumbnail && !chapter.pages.some(p => p.image === chapter.thumbnail)) {
+                        const oldPublicId = this.extractPublicIdFromUrl(chapter.thumbnail);
+                        if (oldPublicId) {
+                            await CloudinaryUtils.deleteImage(oldPublicId);
+                            console.log('Deleted old thumbnail:', oldPublicId);
+                        }
+                    }
+
+                    // Upload new thumbnail
+                    const thumbnailResult = await CloudinaryUtils.uploadImage(
+                        thumbnailFile.buffer,
+                        `manga/chapters/${chapter.mangaId._id}/thumbnails`,
+                        `${chapter.mangaId._id}_chapter_${updateData.chapterNumber || chapter.chapterNumber}_thumbnail`
+                    );
+                    updateData.thumbnail = thumbnailResult.secure_url;
+                    console.log('Thumbnail updated successfully:', updateData.thumbnail);
+                } catch (thumbnailError) {
+                    console.error('Failed to update thumbnail:', thumbnailError);
+                    return {
+                        status: 'error',
+                        message: 'Failed to upload thumbnail: ' + thumbnailError.message
+                    };
+                }
             }
 
             // Update pages if new files are provided
@@ -288,10 +317,17 @@ class ChapterService {
                 // Sort pages by page number
                 pages.sort((a, b) => a.pageNumber - b.pageNumber);
                 updateData.pages = pages;
+
+                // If no thumbnail was set and pages updated, use first page as thumbnail
+                if (!updateData.thumbnail && pages.length > 0) {
+                    updateData.thumbnail = pages[0].image;
+                }
             }
 
             // Update updatedAt timestamp
             updateData.updatedAt = new Date();
+
+            console.log('Update data:', updateData);
 
             // Update chapter in database
             const updatedChapter = await Chapter.findByIdAndUpdate(
@@ -342,7 +378,8 @@ class ChapterService {
     // Helper method to extract public ID from Cloudinary URL
     extractPublicIdFromUrl(url) {
         try {
-            const matches = url.match(/\/([^/]+)\.[^.]+$/);
+            // Extract the full path including folders
+            const matches = url.match(/upload\/(?:v\d+\/)?(.+)\.\w+$/);
             return matches ? matches[1] : null;
         } catch (error) {
             return null;

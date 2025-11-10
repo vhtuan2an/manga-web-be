@@ -5,15 +5,19 @@ class ChapterController {
         try {
             const { mangaId } = req.params;
             const chapterData = req.body;
-            const files = req.files; // Multer sẽ cung cấp array các files
+            
+            // req.files sẽ có dạng: { thumbnail: [file], pages: [file1, file2, ...] }
+            const thumbnail = req.files?.thumbnail ? req.files.thumbnail[0] : null;
+            const pages = req.files?.pages || [];
 
             console.log('Upload chapter request:', {
                 mangaId,
                 chapterData,
-                filesCount: files ? files.length : 0
+                hasThumbnail: !!thumbnail,
+                pagesCount: pages.length
             });
 
-            const result = await ChapterService.uploadChapter(mangaId, chapterData, files);
+            const result = await ChapterService.uploadChapter(mangaId, chapterData, pages, thumbnail);
 
             if (result.status === 'error') {
                 return res.status(422).json(result);
@@ -22,6 +26,7 @@ class ChapterController {
             return res.status(201).json(result);
 
         } catch (error) {
+            console.error('Upload chapter error:', error);
             return res.status(500).json({
                 status: 'error',
                 message: 'Internal server error: ' + error.message
@@ -50,17 +55,19 @@ class ChapterController {
         try {
             const { chapterId } = req.params;
             const chapterData = req.body;
-            const files = req.files;
+            const thumbnail = req.files?.thumbnail ? req.files.thumbnail[0] : null;
+            const pages = req.files?.pages || [];
             const userId = req.id;
 
             console.log('Update chapter request:', {
                 chapterId,
                 chapterData,
-                filesCount: files ? files.length : 0,
+                hasThumbnail: !!thumbnail,
+                pagesCount: pages.length,
                 userId
             });
 
-            const result = await ChapterService.updateChapter(chapterId, chapterData, files, userId);
+            const result = await ChapterService.updateChapter(chapterId, chapterData, pages, userId, thumbnail);
 
             if (result.status === 'error') {
                 const statusCode = result.message.includes('not found') ? 404 : 
@@ -71,6 +78,7 @@ class ChapterController {
             return res.status(200).json(result);
 
         } catch (error) {
+            console.error('Update chapter error:', error);
             return res.status(500).json({
                 status: 'error',
                 message: 'Internal server error: ' + error.message
