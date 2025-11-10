@@ -15,6 +15,10 @@ const ChapterSchema = new mongoose.Schema(
         pageNumber: { type: Number, required: true },
         image: { type: String, required: true }
     }],
+    thumbnail: {
+      type: String,
+      default: "",
+    },
     chapterNumber: {
       type: Number,
       required: true,
