@@ -3,6 +3,7 @@ const CloudinaryUtils = require("../utils/CloudinaryUtils");
 const mongoose = require("mongoose");
 const Genre = require("../models/Genre");
 const Chapter = require("../models/Chapter");
+const Report = require("../models/Report");
 
 class MangaService {
   // Helper function to extract public ID from Cloudinary URL to delete images
@@ -279,6 +280,33 @@ class MangaService {
       return {
         status: "error",
         message: "Failed to retrieve chapter list: " + error.message,
+      };
+    }
+  }
+
+  async reportManga(reportData) {
+    try {
+      const manga = await Manga.findById(reportData.mangaId);
+      if (!manga) {
+        return {
+          status: "error",
+          message: "Manga not found",
+        };
+      }
+
+      const report = new Report(reportData);
+
+      await report.save();
+
+      return {
+        status: "success",
+        message: "Manga reported successfully",
+        data: report,
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        message: "Failed to report manga: " + error.message,
       };
     }
   }

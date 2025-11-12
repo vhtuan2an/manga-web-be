@@ -11,6 +11,7 @@ router.get('/:id', MangaController.getMangaById);
 router.put('/:id', authMiddleware(['uploader']), uploadSingle, checkMangaOwnership, MangaController.updateManga);
 router.delete('/:id', authMiddleware(['admin', 'uploader']), checkMangaOwnership, MangaController.deleteManga);
 router.get('/:mangaId/chapters', MangaController.getChapterList);
+router.post('/:mangaId/report', authMiddleware(['reader', 'uploader', 'admin']), MangaController.reportManga);
 
 module.exports = router;
 
