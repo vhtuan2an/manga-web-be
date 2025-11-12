@@ -21,4 +21,10 @@ router.get(
   ReportController.getReportById
 );
 
+router.delete(
+  "/:reportId",
+  authMiddleware(["admin"]),
+  ReportController.deleteReport
+);
+
 module.exports = router;

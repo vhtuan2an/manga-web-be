@@ -66,28 +66,49 @@ class ReportService {
     }
   }
 
-  async getReportsById (reportId) {
+  async getReportsById(reportId) {
     try {
-        const report = await Report.findById(reportId).lean();
-        if (!report) {
-            return {
-                status: "error",
-                message: "Report not found",
-            };
-        }
+      const report = await Report.findById(reportId).lean();
+      if (!report) {
         return {
-            status: "success",
-            data: report,
+          status: "error",
+          message: "Report not found",
         };
+      }
+      return {
+        status: "success",
+        data: report,
+      };
     } catch (error) {
-        return {
-            status: "error",
-            message: "Failed to retrieve report: " + error.message,
-        };
+      return {
+        status: "error",
+        message: "Failed to retrieve report: " + error.message,
+      };
     }
   }
 
+  async deleteReport(reportId) {
+    try {
+      const report = await Report.findById(reportId);
+      if (!report) {
+        return {
+          status: "error",
+          message: "Report not found",
+        };
+      }
 
+      await Report.findByIdAndDelete(reportId);
+      return {
+        status: "success",
+        message: "Report deleted successfully",
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        message: "Failed to delete report: " + error.message,
+      };
+    }
+  }
 }
 
 module.exports = new ReportService();
