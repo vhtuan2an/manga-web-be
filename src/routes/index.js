@@ -6,6 +6,7 @@ const GenreRouter = require('./GenreRouter');
 const CommentRouter = require('./CommentRouter');
 const RatingRouter = require('./RatingRouter');
 const AIRouter = require('./AIRouter');
+const ReportRouter = require('./ReportRouter');
 
 const routes = (app) => {
     app.use('/api/auth', AuthRouter);
@@ -16,6 +17,7 @@ const routes = (app) => {
     app.use('/api/comments', CommentRouter);
     app.use('/api/ratings', RatingRouter);
     app.use('/api/ai', AIRouter);
+    app.use('/api/reports', ReportRouter);
 }
 
 module.exports = routes;
