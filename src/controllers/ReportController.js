@@ -23,16 +23,16 @@ class ReportController {
 
   async getAllReports(req, res) {
     try {
-        const result = await ReportService.getAllReports();
-        if (result.status === "error") {
-            return res.status(422).json(result);
-        }
-        return res.status(200).json(result);
+      const result = await ReportService.getAllReports();
+      if (result.status === "error") {
+        return res.status(422).json(result);
+      }
+      return res.status(200).json(result);
     } catch (error) {
-        return res.status(500).json({
-            status: "error",
-            message: "Internal server error: " + error.message,
-        });
+      return res.status(500).json({
+        status: "error",
+        message: "Internal server error: " + error.message,
+      });
     }
   }
 
@@ -40,6 +40,22 @@ class ReportController {
     try {
       const mangaId = req.params.mangaId;
       const result = await ReportService.getReportsInManga(mangaId);
+      if (result.status === "error") {
+        return res.status(422).json(result);
+      }
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(500).json({
+        status: "error",
+        message: "Internal server error: " + error.message,
+      });
+    }
+  }
+
+  async getReportById(req, res) {
+    try {
+      const reportId = req.params.reportId;
+      const result = await ReportService.getReportsById(reportId);
       if (result.status === "error") {
         return res.status(422).json(result);
       }

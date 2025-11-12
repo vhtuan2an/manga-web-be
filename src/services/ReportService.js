@@ -46,6 +46,13 @@ class ReportService {
 
   async getReportsInManga(mangaId) {
     try {
+      const manga = await Manga.findById(mangaId);
+      if (!manga) {
+        return {
+          status: "error",
+          message: "Manga not found",
+        };
+      }
       const reports = await Report.find({ mangaId: mangaId }).lean();
       return {
         status: "success",
