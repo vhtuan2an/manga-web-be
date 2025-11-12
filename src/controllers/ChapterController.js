@@ -85,6 +85,26 @@ class ChapterController {
             });
         }
     }
+
+    async deleteChapter(req, res) {
+        try {
+            const { chapterId } = req.params;
+            const userId = req.id;
+            const result = await ChapterService.deleteChapter(chapterId, userId);
+
+            if (result.status === 'error') {
+                const statusCode = result.message.includes('not found') ? 404 : 
+                                 result.message.includes('not authorized') ? 403 : 422;
+                return res.status(statusCode).json(result);
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(500).json({
+                status: 'error',
+                message: 'Internal server error: ' + error.message
+            });
+        }
+    }
 }
 
 module.exports = new ChapterController();

@@ -19,6 +19,11 @@ router.put(
   ChapterController.updateChapter
 );
 router.get("/:chapterId", ChapterController.getChapterById);
+router.delete(
+  "/:chapterId",
+  authMiddleware(["admin", "uploader"]),
+  ChapterController.deleteChapter
+);
 
 module.exports = router;
 

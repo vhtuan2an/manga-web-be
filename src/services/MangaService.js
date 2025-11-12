@@ -55,45 +55,8 @@ class MangaService {
         };
       }
 
-      // Process genres data if provided
-      if (updateData.genres) {
-        let processedGenres = [];
-        if (typeof updateData.genres === "string") {
-          try {
-            if (
-              updateData.genres.startsWith("[") &&
-              updateData.genres.endsWith("]")
-            ) {
-              const genreArray = JSON.parse(updateData.genres);
-              processedGenres = genreArray.map(
-                (id) => new mongoose.Types.ObjectId(id.trim())
-              );
-            } else {
-              processedGenres = updateData.genres
-                .split(",")
-                .map((id) => new mongoose.Types.ObjectId(id.trim()));
-            }
-          } catch (parseError) {
-            return {
-              status: "error",
-              message: "Invalid genres format. Please provide valid ObjectIds.",
-            };
-          }
-        } else if (Array.isArray(updateData.genres)) {
-          processedGenres = updateData.genres.map((id) => {
-            if (mongoose.Types.ObjectId.isValid(id)) {
-              return new mongoose.Types.ObjectId(id);
-            } else {
-              throw new Error(`Invalid ObjectId: ${id}`);
-            }
-          });
-        }
-        updateData.genres = processedGenres;
-      }
-
-      // Handle cover image update if provided
+      // Update cover image if provided
       if (coverImageBuffer) {
-        // Delete old cover if exists
         if (manga.coverImage) {
           const publicId = this.extractPublicIdFromUrl(manga.coverImage);
           if (publicId) {
@@ -101,26 +64,35 @@ class MangaService {
           }
         }
 
-        // Upload new cover
         const uploadResult = await CloudinaryUtils.uploadImage(
           coverImageBuffer,
           "manga/covers",
-          `cover_${mangaId}`
+          `${mangaId}_cover`
         );
         updateData.coverImage = uploadResult.secure_url;
       }
 
-      // Update manga with new data
-      const updatedManga = await Manga.findByIdAndUpdate(mangaId, updateData, {
-        new: true,
-        runValidators: true,
-      })
-        .populate("genres", "name")
-        .populate("uploaderId", "username email");
+      // If rawCount is updated, recalculate progress with 2 decimal places
+      if (updateData.rawCount !== undefined) {
+        const newRawCount = parseInt(updateData.rawCount);
+        if (newRawCount > 0) {
+          updateData.progress = Math.min(
+            Math.round((manga.chapterCount / newRawCount) * 100 * 100) / 100,
+            100
+          );
+        } else {
+          updateData.progress = 0;
+        }
+      }
+
+      const updatedManga = await Manga.findByIdAndUpdate(
+        mangaId,
+        updateData,
+        { new: true }
+      ).populate("genres", "name");
 
       return {
         status: "success",
-        message: "Manga updated successfully",
         data: updatedManga,
       };
     } catch (error) {

@@ -116,8 +116,30 @@ class ChapterService {
 
             await chapter.save();
 
+            // Update manga: increment chapterCount and calculate progress
+            const updatedManga = await Manga.findByIdAndUpdate(
+                mangaId,
+                { 
+                    $inc: { chapterCount: 1 },
+                },
+                { new: true }
+            );
+
+            // Calculate progress: (chapterCount / rawCount) * 100 with 2 decimal places
+            let progress = 0;
+            if (updatedManga.rawCount > 0) {
+                progress = Math.round((updatedManga.chapterCount / updatedManga.rawCount) * 100 * 100) / 100;
+                // Ensure progress doesn't exceed 100%
+                progress = Math.min(progress, 100);
+            }
+
+            // Update progress
+            await Manga.findByIdAndUpdate(mangaId, { progress });
+
             const populatedChapter = await Chapter.findById(chapter._id)
                 .populate('mangaId', 'title');
+
+            console.log(`Chapter uploaded successfully. Manga stats updated: chapterCount=${updatedManga.chapterCount}, progress=${progress}%`);
 
             return {
                 status: 'success',
@@ -383,6 +405,71 @@ class ChapterService {
             return matches ? matches[1] : null;
         } catch (error) {
             return null;
+        }
+    }
+
+    async deleteChapter(chapterId, userId) {
+        try {
+            const chapter = await Chapter.findById(chapterId).populate('mangaId');
+            
+            if (!chapter) {
+                return {
+                    status: 'error',
+                    message: 'Chapter not found'
+                };
+            }
+
+            // Check authorization
+            if (chapter.mangaId.uploaderId.toString() !== userId.toString()) {
+                return {
+                    status: 'error',
+                    message: 'Not authorized to delete this chapter'
+                };
+            }
+
+            const mangaId = chapter.mangaId._id;
+
+            // Delete images from Cloudinary
+            await this.deleteOldImages(chapter.pages);
+            if (chapter.thumbnail && !chapter.pages.some(p => p.image === chapter.thumbnail)) {
+                const thumbnailPublicId = this.extractPublicIdFromUrl(chapter.thumbnail);
+                if (thumbnailPublicId) {
+                    await CloudinaryUtils.deleteImage(thumbnailPublicId);
+                }
+            }
+
+            // Delete chapter
+            await Chapter.findByIdAndDelete(chapterId);
+
+            // Update manga: decrement chapterCount and recalculate progress
+            const updatedManga = await Manga.findByIdAndUpdate(
+                mangaId,
+                { 
+                    $inc: { chapterCount: -1 },
+                },
+                { new: true }
+            );
+
+            // Calculate progress with 2 decimal places
+            let progress = 0;
+            if (updatedManga.rawCount > 0) {
+                progress = Math.round((updatedManga.chapterCount / updatedManga.rawCount) * 100 * 100) / 100;
+                progress = Math.min(progress, 100);
+            }
+
+            await Manga.findByIdAndUpdate(mangaId, { progress });
+
+            return {
+                status: 'success',
+                message: 'Chapter deleted successfully'
+            };
+
+        } catch (error) {
+            console.error('Delete chapter error:', error);
+            return {
+                status: 'error',
+                message: 'Failed to delete chapter: ' + error.message
+            };
         }
     }
 }
