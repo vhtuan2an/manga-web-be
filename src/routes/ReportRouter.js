@@ -10,5 +10,10 @@ router.post(
 );
 
 router.get("/", authMiddleware(["admin"]), ReportController.getAllReports); 
+router.get(
+  "/manga/:mangaId",
+  authMiddleware(["admin"]),
+  ReportController.getReportsInManga
+);
 
 module.exports = router;

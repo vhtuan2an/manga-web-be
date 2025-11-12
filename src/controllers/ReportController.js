@@ -35,6 +35,22 @@ class ReportController {
         });
     }
   }
+
+  async getReportsInManga(req, res) {
+    try {
+      const mangaId = req.params.mangaId;
+      const result = await ReportService.getReportsInManga(mangaId);
+      if (result.status === "error") {
+        return res.status(422).json(result);
+      }
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(500).json({
+        status: "error",
+        message: "Internal server error: " + error.message,
+      });
+    }
+  }
 }
 
 module.exports = new ReportController();
