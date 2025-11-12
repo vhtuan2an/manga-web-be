@@ -214,6 +214,9 @@ class MangaService {
         };
       }
 
+      manga.viewCount += 1;
+      await Manga.findByIdAndUpdate(mangaId, { viewCount: manga.viewCount });
+
       return {
         status: "success",
         data: manga,
