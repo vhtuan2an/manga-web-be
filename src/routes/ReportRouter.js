@@ -11,7 +11,7 @@ router.post(
 
 router.get("/", authMiddleware(["admin"]), ReportController.getAllReports);
 router.get(
-  "/:mangaId",
+  "/manga/:mangaId",
   authMiddleware(["admin"]),
   ReportController.getReportsInManga
 );
