@@ -11,6 +11,7 @@ router.get('/:id', MangaController.getMangaById);
 router.put('/:id', authMiddleware(['uploader']), uploadSingle, checkMangaOwnership, MangaController.updateManga);
 router.delete('/:id', authMiddleware(['admin', 'uploader']), checkMangaOwnership, MangaController.deleteManga);
 router.get('/:mangaId/chapters', MangaController.getChapterList);
+router.get('/count/genre/:genreId', MangaController.getMangaCountByGenre);
 
 module.exports = router;
 
@@ -262,4 +263,58 @@ module.exports = router;
  *                     $ref: '#/components/schemas/Chapter'
  *       404:
  *         description: Manga not found
+ */
+
+/**
+ * @swagger
+ * /api/mangas/count/genre/{genreId}:
+ *   get:
+ *     summary: Get manga count by genre
+ *     tags: [Manga]
+ *     parameters:
+ *       - in: path
+ *         name: genreId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Genre ID
+ *         example: 64f8a1b2c3d4e5f6a7b8c9d0
+ *     responses:
+ *       200:
+ *         description: Manga count for the genre
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     genreId:
+ *                       type: string
+ *                       example: 64f8a1b2c3d4e5f6a7b8c9d0
+ *                     genreName:
+ *                       type: string
+ *                       example: Action
+ *                     count:
+ *                       type: integer
+ *                       example: 125
+ *       404:
+ *         description: Genre not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Genre not found
+ *       500:
+ *         description: Internal server error
  */

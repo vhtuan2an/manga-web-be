@@ -255,6 +255,46 @@ class MangaService {
       };
     }
   }
+
+  async getMangaCountByGenre(genreId) {
+    try {
+      // Validate genre ID
+      if (!mongoose.Types.ObjectId.isValid(genreId)) {
+        return {
+          status: "error",
+          message: "Invalid genre ID",
+        };
+      }
+
+      // Check if genre exists
+      const genre = await Genre.findById(genreId);
+      if (!genre) {
+        return {
+          status: "error",
+          message: "Genre not found",
+        };
+      }
+
+      // Count mangas with this genre
+      const count = await Manga.countDocuments({
+        genres: { $in: [new mongoose.Types.ObjectId(genreId)] },
+      });
+
+      return {
+        status: "success",
+        data: {
+          genreId,
+          genreName: genre.name,
+          count,
+        },
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        message: "Failed to count mangas by genre: " + error.message,
+      };
+    }
+  }
 }
 
 module.exports = new MangaService();
