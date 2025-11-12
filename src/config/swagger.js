@@ -124,6 +124,28 @@ const options = {
                         updatedAt: { type: 'string', format: 'date-time' }
                     }
                 },
+                Report: {
+                    type: 'object',
+                    properties: {
+                        _id: { type: 'string' },
+                        user: { type: 'string' },
+                        manga: { type: 'string' },
+                        chapter: { type: 'string' },
+                        comment: { type: 'string' },
+                        reason: { 
+                            type: 'string',
+                            enum: ['spam', 'inappropriate', 'copyright', 'other']
+                        },
+                        description: { type: 'string' },
+                        status: {
+                            type: 'string',
+                            enum: ['pending', 'reviewed', 'resolved', 'rejected']
+                        },
+                        adminNote: { type: 'string' },
+                        createdAt: { type: 'string', format: 'date-time' },
+                        updatedAt: { type: 'string', format: 'date-time' }
+                    }
+                },
                 Error: {
                     type: 'object',
                     properties: {
