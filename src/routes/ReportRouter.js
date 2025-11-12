@@ -9,4 +9,6 @@ router.post(
   ReportController.reportManga
 );
 
+router.get("/", authMiddleware(["admin"]), ReportController.getAllReports); 
+
 module.exports = router;

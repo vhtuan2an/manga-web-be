@@ -28,6 +28,57 @@ class ReportService {
       };
     }
   }
+
+  async getAllReports() {
+    try {
+      const reports = await Report.find().lean();
+      return {
+        status: "success",
+        data: reports,
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        message: "Failed to retrieve reports: " + error.message,
+      };
+    }
+  }
+
+  async getReportsInManga(mangaId) {
+    try {
+      const reports = await Report.find({ mangaId: mangaId }).lean();
+      return {
+        status: "success",
+        data: reports,
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        message: "Failed to retrieve reports: " + error.message,
+      };
+    }
+  }
+
+  async getReportsById (reportId) {
+    try {
+        const report = await Report.findById(reportId).lean();
+        if (!report) {
+            return {
+                status: "error",
+                message: "Report not found",
+            };
+        }
+        return {
+            status: "success",
+            data: report,
+        };
+    } catch (error) {
+        return {
+            status: "error",
+            message: "Failed to retrieve report: " + error.message,
+        };
+    }
+  }
 }
 
 module.exports = new ReportService();
