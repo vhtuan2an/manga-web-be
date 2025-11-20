@@ -19,19 +19,47 @@ module.exports = router;
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     GenreWithCount:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           example: 64f8a1b2c3d4e5f6a7b8c9d0
+ *         name:
+ *           type: string
+ *           example: Action
+ *         description:
+ *           type: string
+ *           example: Fast-paced stories with fighting and adventure
+ *         mangaCount:
+ *           type: integer
+ *           example: 42
+ *           description: Number of mangas in this genre
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
+
+/**
+ * @swagger
  * /api/genres:
  *   get:
- *     summary: Get all genres
+ *     summary: Get all genres with manga count
  *     tags: [Genres]
  *     responses:
  *       200:
- *         description: List of all genres
+ *         description: List of all genres with their manga counts
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Genre'
+ *                 $ref: '#/components/schemas/GenreWithCount'
  */
 
 /**
@@ -63,7 +91,7 @@ module.exports = router;
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Genre'
+ *               $ref: '#/components/schemas/GenreWithCount'
  *       400:
  *         description: Bad request - validation error
  */
@@ -72,7 +100,7 @@ module.exports = router;
  * @swagger
  * /api/genres/{id}:
  *   get:
- *     summary: Get genre by ID
+ *     summary: Get genre by ID with manga count
  *     tags: [Genres]
  *     parameters:
  *       - in: path
@@ -83,11 +111,11 @@ module.exports = router;
  *         description: Genre ID
  *     responses:
  *       200:
- *         description: Genre information
+ *         description: Genre information with manga count
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Genre'
+ *               $ref: '#/components/schemas/GenreWithCount'
  *       404:
  *         description: Genre not found
  */
@@ -120,11 +148,11 @@ module.exports = router;
  *                 example: Updated genre description
  *     responses:
  *       200:
- *         description: Genre updated successfully
+ *         description: Genre updated successfully with manga count
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Genre'
+ *               $ref: '#/components/schemas/GenreWithCount'
  *       404:
  *         description: Genre not found
  *       400:
