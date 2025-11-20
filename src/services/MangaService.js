@@ -3,6 +3,7 @@ const CloudinaryUtils = require("../utils/CloudinaryUtils");
 const mongoose = require("mongoose");
 const Genre = require("../models/Genre");
 const Chapter = require("../models/Chapter");
+const Report = require("../models/Report");
 
 class MangaService {
   // Helper function to extract public ID from Cloudinary URL to delete images
@@ -54,45 +55,8 @@ class MangaService {
         };
       }
 
-      // Process genres data if provided
-      if (updateData.genres) {
-        let processedGenres = [];
-        if (typeof updateData.genres === "string") {
-          try {
-            if (
-              updateData.genres.startsWith("[") &&
-              updateData.genres.endsWith("]")
-            ) {
-              const genreArray = JSON.parse(updateData.genres);
-              processedGenres = genreArray.map(
-                (id) => new mongoose.Types.ObjectId(id.trim())
-              );
-            } else {
-              processedGenres = updateData.genres
-                .split(",")
-                .map((id) => new mongoose.Types.ObjectId(id.trim()));
-            }
-          } catch (parseError) {
-            return {
-              status: "error",
-              message: "Invalid genres format. Please provide valid ObjectIds.",
-            };
-          }
-        } else if (Array.isArray(updateData.genres)) {
-          processedGenres = updateData.genres.map((id) => {
-            if (mongoose.Types.ObjectId.isValid(id)) {
-              return new mongoose.Types.ObjectId(id);
-            } else {
-              throw new Error(`Invalid ObjectId: ${id}`);
-            }
-          });
-        }
-        updateData.genres = processedGenres;
-      }
-
-      // Handle cover image update if provided
+      // Update cover image if provided
       if (coverImageBuffer) {
-        // Delete old cover if exists
         if (manga.coverImage) {
           const publicId = this.extractPublicIdFromUrl(manga.coverImage);
           if (publicId) {
@@ -100,26 +64,35 @@ class MangaService {
           }
         }
 
-        // Upload new cover
         const uploadResult = await CloudinaryUtils.uploadImage(
           coverImageBuffer,
           "manga/covers",
-          `cover_${mangaId}`
+          `${mangaId}_cover`
         );
         updateData.coverImage = uploadResult.secure_url;
       }
 
-      // Update manga with new data
-      const updatedManga = await Manga.findByIdAndUpdate(mangaId, updateData, {
-        new: true,
-        runValidators: true,
-      })
-        .populate("genres", "name")
-        .populate("uploaderId", "username email");
+      // If rawCount is updated, recalculate progress with 2 decimal places
+      if (updateData.rawCount !== undefined) {
+        const newRawCount = parseInt(updateData.rawCount);
+        if (newRawCount > 0) {
+          updateData.progress = Math.min(
+            Math.round((manga.chapterCount / newRawCount) * 100 * 100) / 100,
+            100
+          );
+        } else {
+          updateData.progress = 0;
+        }
+      }
+
+      const updatedManga = await Manga.findByIdAndUpdate(
+        mangaId,
+        updateData,
+        { new: true }
+      ).populate("genres", "name");
 
       return {
         status: "success",
-        message: "Manga updated successfully",
         data: updatedManga,
       };
     } catch (error) {
@@ -214,6 +187,9 @@ class MangaService {
         };
       }
 
+      manga.viewCount += 1;
+      await Manga.findByIdAndUpdate(mangaId, { viewCount: manga.viewCount });
+
       return {
         status: "success",
         data: manga,
@@ -259,7 +235,7 @@ class MangaService {
   async getChapterList(mangaId) {
     try {
       const chapters = await Chapter.find({ mangaId: mangaId })
-        .select("title chapterNumber")
+        .select("title chapterNumber _id thumbnail createdAt updatedAt")
         .sort({ chapterNumber: 1 })
         .lean();
       if (!chapters) {
@@ -276,6 +252,46 @@ class MangaService {
       return {
         status: "error",
         message: "Failed to retrieve chapter list: " + error.message,
+      };
+    }
+  }
+
+  async getMangaCountByGenre(genreId) {
+    try {
+      // Validate genre ID
+      if (!mongoose.Types.ObjectId.isValid(genreId)) {
+        return {
+          status: "error",
+          message: "Invalid genre ID",
+        };
+      }
+
+      // Check if genre exists
+      const genre = await Genre.findById(genreId);
+      if (!genre) {
+        return {
+          status: "error",
+          message: "Genre not found",
+        };
+      }
+
+      // Count mangas with this genre
+      const count = await Manga.countDocuments({
+        genres: { $in: [new mongoose.Types.ObjectId(genreId)] },
+      });
+
+      return {
+        status: "success",
+        data: {
+          genreId,
+          genreName: genre.name,
+          count,
+        },
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        message: "Failed to count mangas by genre: " + error.message,
       };
     }
   }

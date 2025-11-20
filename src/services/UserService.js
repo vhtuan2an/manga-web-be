@@ -1,8 +1,54 @@
 const AuthService = require('./AuthService');
+const User = require('../models/User');
 
 class UserService {
-    async getAllUsers() {
-        return await User.find().select('-password');
+    async getAllUsers(filter = {}) {
+        try {
+            const page = parseInt(filter.page) || 1;
+            const limit = parseInt(filter.limit) || 10;
+            const skip = (page - 1) * limit;
+
+            // Build query
+            const query = {};
+            
+            // Optional: Add search/filter by role
+            if (filter.role) {
+                query.role = filter.role;
+            }
+            
+            // Optional: Add search by username or email
+            if (filter.search) {
+                query.$or = [
+                    { username: { $regex: filter.search, $options: 'i' } },
+                    { email: { $regex: filter.search, $options: 'i' } }
+                ];
+            }
+
+            // Get users with pagination
+            const users = await User.find(query)
+                .select('-password') // Exclude password field
+                .skip(skip)
+                .limit(limit)
+                .sort({ createdAt: -1 }); // Most recent first
+
+            // Get total count
+            const total = await User.countDocuments(query);
+
+            return {
+                status: 'success',
+                data: users,
+                pagination: {
+                    currentPage: page,
+                    totalPages: Math.ceil(total / limit),
+                    totalItems: total,
+                    itemsPerPage: limit,
+                    hasNextPage: page < Math.ceil(total / limit),
+                    hasPrevPage: page > 1
+                }
+            };
+        } catch (error) {
+            throw error;
+        }
     }
 
     async getUserById(id) {
