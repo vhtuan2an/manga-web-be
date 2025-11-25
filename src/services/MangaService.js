@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const Genre = require("../models/Genre");
 const Chapter = require("../models/Chapter");
 const Report = require("../models/Report");
+const User = require("../models/User");
 
 class MangaService {
   // Helper function to extract public ID from Cloudinary URL to delete images
@@ -32,6 +33,11 @@ class MangaService {
       });
 
       await manga.save();
+      const uploader = await User.findById(manga.uploaderId);
+      if (uploader) {
+        uploader.uploadedMangas.push(manga._id);
+        await uploader.save();
+      }
       return {
         status: "success",
         message: "Manga created successfully",
@@ -218,7 +224,13 @@ class MangaService {
           await CloudinaryUtils.deleteImage(publicId);
         }
       }
-
+      const uploader = await User.findById(manga.uploaderId);
+      if (uploader) {
+        uploader.uploadedMangas = uploader.uploadedMangas.filter(
+          (id) => id.toString() !== mangaId.toString()
+        );
+        await uploader.save();
+      }
       await Manga.findByIdAndDelete(mangaId);
       return {
         status: "success",
