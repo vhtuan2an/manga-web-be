@@ -110,7 +110,10 @@ class UserController {
         try {
             const mangas = await UserService.getUploadedMangas(req.params.id);
             if (!mangas) return res.status(404).json({ status: 'error', message: 'User not found' });
-            res.json(mangas);
+            res.json({
+                mangas: mangas.mangas,
+                count: mangas.count
+            });
         } catch (error) {
             return res.status(500).json({
                 status: 'error',

@@ -108,8 +108,20 @@ class UserService {
     }
 
     async getUploadedMangas(id) {
-        const user = await User.findById(id).populate('uploadedMangas');
-        return user ? user.uploadedMangas : null;
+        try {
+            const user = await User.findById(id).populate('uploadedMangas').lean();
+            
+            if (!user) {
+                return null;
+            }
+            
+            return {
+                mangas: user.uploadedMangas,
+                count: user.uploadedMangas.length
+            };
+        } catch (error) {
+            throw error;
+        }
     }
 }
 
