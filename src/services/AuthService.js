@@ -105,8 +105,11 @@ class AuthService {
             };
 
             return {
-                user: userResponse,
-                accessToken
+                status: 'success',
+                data: {
+                    user: userResponse,
+                    accessToken
+                }
             };
         } catch (error) {
             throw error;
