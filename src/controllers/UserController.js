@@ -14,10 +14,10 @@ class UserController {
         }
     }
 
-    // User operations (uses req.user.id from authMiddleware)
+    // User operations (uses req.id from authMiddleware)
     async getMyProfile(req, res) {
         try {
-            const user = await UserService.getUserById(req.user.id);
+            const user = await UserService.getUserById(req.id);
             res.json(user);
         } catch (error) {
             return res.status(404).json({
@@ -29,7 +29,7 @@ class UserController {
 
     async updateMyProfile(req, res) {
         try {
-            const user = await UserService.updateUser(req.user.id, req.body);
+            const user = await UserService.updateUser(req.id, req.body);
             res.json(user);
         } catch (error) {
             return res.status(400).json({
@@ -41,7 +41,7 @@ class UserController {
 
     async deleteMyProfile(req, res) {
         try {
-            await UserService.deleteUser(req.user.id);
+            await UserService.deleteUser(req.id);
             res.json({ status: 'success', message: 'User deleted' });
         } catch (error) {
             return res.status(404).json({
@@ -53,7 +53,7 @@ class UserController {
 
     async followManga(req, res) {
         try {
-            const result = await UserService.followManga(req.user.id, req.body.mangaId);
+            const result = await UserService.followManga(req.id, req.body.mangaId);
             res.json(result);
         } catch (error) {
             return res.status(400).json({
@@ -65,7 +65,7 @@ class UserController {
 
     async unfollowManga(req, res) {
         try {
-            const result = await UserService.unfollowManga(req.user.id, req.body.mangaId);
+            const result = await UserService.unfollowManga(req.id, req.body.mangaId);
             res.json(result);
         } catch (error) {
             return res.status(400).json({
@@ -77,7 +77,7 @@ class UserController {
 
     async getMyReadingHistory(req, res) {
         try {
-            const result = await UserService.getReadingHistory(req.user.id);
+            const result = await UserService.getReadingHistory(req.id);
             res.json(result);
         } catch (error) {
             return res.status(404).json({
@@ -90,7 +90,7 @@ class UserController {
     async updateMyReadingHistory(req, res) {
         try {
             const { manga, chapterId } = req.body;
-            const result = await UserService.updateReadingHistory(req.user.id, manga, chapterId);
+            const result = await UserService.updateReadingHistory(req.id, manga, chapterId);
             res.json(result);
         } catch (error) {
             return res.status(400).json({
@@ -102,7 +102,7 @@ class UserController {
 
     async getMyUploadedMangas(req, res) {
         try {
-            const result = await UserService.getUploadedMangas(req.user.id);
+            const result = await UserService.getUploadedMangas(req.id);
             res.json(result);
         } catch (error) {
             return res.status(404).json({
