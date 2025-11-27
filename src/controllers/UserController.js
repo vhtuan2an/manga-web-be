@@ -14,110 +14,158 @@ class UserController {
         }
     }
 
-    async getUserById(req, res) {
+    // User operations (uses req.user.id from authMiddleware)
+    async getMyProfile(req, res) {
         try {
-            const user = await UserService.getUserById(req.params.id);
-            if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+            const user = await UserService.getUserById(req.user.id);
             res.json(user);
         } catch (error) {
-            return res.status(500).json({
+            return res.status(404).json({
                 status: 'error',
-                message: 'Internal server error: ' + error.message
+                message: error.message
             });
         }
     }
 
-    async updateUser(req, res) {
+    async updateMyProfile(req, res) {
         try {
-            const user = await UserService.updateUser(req.params.id, req.body);
-            if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+            const user = await UserService.updateUser(req.user.id, req.body);
             res.json(user);
         } catch (error) {
             return res.status(400).json({
                 status: 'error',
-                message: 'Bad request: ' + error.message
+                message: error.message
             });
         }
     }
 
-    async deleteUser(req, res) {
+    async deleteMyProfile(req, res) {
         try {
-            const user = await UserService.deleteUser(req.params.id);
-            if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
-            res.json({ message: 'User deleted' });
+            await UserService.deleteUser(req.user.id);
+            res.json({ status: 'success', message: 'User deleted' });
         } catch (error) {
-            return res.status(500).json({
+            return res.status(404).json({
                 status: 'error',
-                message: 'Internal server error: ' + error.message
+                message: error.message
             });
         }
     }
 
     async followManga(req, res) {
         try {
-            const { mangaId } = req.body;
-            const user = await UserService.followManga(req.params.id, mangaId);
-            res.json(user);
+            const result = await UserService.followManga(req.user.id, req.body.mangaId);
+            res.json(result);
         } catch (error) {
             return res.status(400).json({
                 status: 'error',
-                message: 'Bad request: ' + error.message
+                message: error.message
             });
         }
     }
 
     async unfollowManga(req, res) {
         try {
-            const { mangaId } = req.body;
-            const user = await UserService.unfollowManga(req.params.id, mangaId);
-            res.json(user);
+            const result = await UserService.unfollowManga(req.user.id, req.body.mangaId);
+            res.json(result);
         } catch (error) {
             return res.status(400).json({
                 status: 'error',
-                message: 'Bad request: ' + error.message
+                message: error.message
             });
         }
     }
 
-    async getReadingHistory(req, res) {
+    async getMyReadingHistory(req, res) {
         try {
-            const history = await UserService.getReadingHistory(req.params.id);
-            if (!history) return res.status(404).json({ status: 'error', message: 'User not found' });
-            res.json(history);
+            const result = await UserService.getReadingHistory(req.user.id);
+            res.json(result);
         } catch (error) {
-            return res.status(500).json({
+            return res.status(404).json({
                 status: 'error',
-                message: 'Internal server error: ' + error.message
+                message: error.message
             });
         }
     }
 
-    async updateReadingHistory(req, res) {
+    async updateMyReadingHistory(req, res) {
         try {
             const { manga, chapterId } = req.body;
-            const user = await UserService.updateReadingHistory(req.params.id, manga, chapterId);
-            if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
-            res.json(user);
+            const result = await UserService.updateReadingHistory(req.user.id, manga, chapterId);
+            res.json(result);
         } catch (error) {
             return res.status(400).json({
                 status: 'error',
-                message: 'Bad request: ' + error.message
+                message: error.message
             });
         }
     }
 
-    async getUploadedMangas(req, res) {
+    async getMyUploadedMangas(req, res) {
         try {
-            const mangas = await UserService.getUploadedMangas(req.params.id);
-            if (!mangas) return res.status(404).json({ status: 'error', message: 'User not found' });
-            res.json({
-                mangas: mangas.mangas,
-                count: mangas.count
-            });
+            const result = await UserService.getUploadedMangas(req.user.id);
+            res.json(result);
         } catch (error) {
-            return res.status(500).json({
+            return res.status(404).json({
                 status: 'error',
-                message: 'Internal server error: ' + error.message
+                message: error.message
+            });
+        }
+    }
+
+    // Admin operations (uses userId from req.query or req.body)
+    async getUserById(req, res) {
+        try {
+            const userId = req.query.userId;
+            if (!userId) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'userId is required'
+                });
+            }
+            const user = await UserService.getUserById(userId);
+            res.json(user);
+        } catch (error) {
+            return res.status(404).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    }
+
+    async updateUserById(req, res) {
+        try {
+            const { userId, ...updateData } = req.body;
+            if (!userId) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'userId is required'
+                });
+            }
+            const user = await UserService.updateUser(userId, updateData);
+            res.json(user);
+        } catch (error) {
+            return res.status(400).json({
+                status: 'error',
+                message: error.message
+            });
+        }
+    }
+
+    async deleteUserById(req, res) {
+        try {
+            const { userId } = req.body;
+            if (!userId) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'userId is required'
+                });
+            }
+            await UserService.deleteUser(userId);
+            res.json({ status: 'success', message: 'User deleted' });
+        } catch (error) {
+            return res.status(404).json({
+                status: 'error',
+                message: error.message
             });
         }
     }

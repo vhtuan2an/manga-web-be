@@ -1,19 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const UserController = require('../controllers/UserController');
+const { authMiddleware } = require('../middlewares/AuthMiddleware');
 
+// Public route
 router.get('/', UserController.getAllUsers);
-router.get('/:id', UserController.getUserById);
-router.put('/:id', UserController.updateUser);
-router.delete('/:id', UserController.deleteUser);
 
-router.post('/:id/follow', UserController.followManga);
-router.post('/:id/unfollow', UserController.unfollowManga);
+// Authenticated user operations (uses req.user.id from authMiddleware)
+router.get('/profile', authMiddleware(['reader', 'uploader', 'admin']), UserController.getMyProfile);
+router.put('/profile', authMiddleware(['reader', 'uploader', 'admin']), UserController.updateMyProfile);
+router.delete('/profile', authMiddleware(['reader', 'uploader', 'admin']), UserController.deleteMyProfile);
 
-router.get('/:id/reading-history', UserController.getReadingHistory);
-router.post('/:id/reading-history', UserController.updateReadingHistory);
+router.post('/follow', authMiddleware(['reader', 'uploader', 'admin']), UserController.followManga);
+router.post('/unfollow', authMiddleware(['reader', 'uploader', 'admin']), UserController.unfollowManga);
 
-router.get('/:id/uploaded-mangas', UserController.getUploadedMangas);
+router.get('/reading-history', authMiddleware(['reader', 'uploader', 'admin']), UserController.getMyReadingHistory);
+router.post('/reading-history', authMiddleware(['reader', 'uploader', 'admin']), UserController.updateMyReadingHistory);
+
+router.get('/uploaded-mangas', authMiddleware(['uploader', 'admin']), UserController.getMyUploadedMangas);
+
+// Admin operations on other users by ID in body
+router.put('/admin/update', authMiddleware(['admin']), UserController.updateUserById);
+router.delete('/admin/delete', authMiddleware(['admin']), UserController.deleteUserById);
+router.get('/admin/user', authMiddleware(['admin']), UserController.getUserById);
 
 module.exports = router;
 
@@ -36,101 +45,48 @@ module.exports = router;
  *         schema:
  *           type: integer
  *           default: 1
- *         description: Page number
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
  *           default: 10
- *         description: Items per page
  *       - in: query
  *         name: role
  *         schema:
  *           type: string
  *           enum: [reader, uploader, admin]
- *         description: Filter by user role
  *       - in: query
  *         name: search
  *         schema:
  *           type: string
- *         description: Search by username or email
  *     responses:
  *       200:
  *         description: List of users with pagination
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/User'
- *                 pagination:
- *                   type: object
- *                   properties:
- *                     currentPage:
- *                       type: integer
- *                       example: 1
- *                     totalPages:
- *                       type: integer
- *                       example: 5
- *                     totalItems:
- *                       type: integer
- *                       example: 47
- *                     itemsPerPage:
- *                       type: integer
- *                       example: 10
- *                     hasNextPage:
- *                       type: boolean
- *                       example: true
- *                     hasPrevPage:
- *                       type: boolean
- *                       example: false
- *       500:
- *         description: Internal server error
  */
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /api/users/profile:
  *   get:
- *     summary: Get user by ID
+ *     summary: Get my profile
  *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: User information
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       404:
- *         description: User not found
+ *         description: User profile
+ *       401:
+ *         description: Unauthorized
  */
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /api/users/profile:
  *   put:
- *     summary: Update user profile
+ *     summary: Update my profile
  *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -140,56 +96,36 @@ module.exports = router;
  *             properties:
  *               username:
  *                 type: string
- *                 example: new_username
  *               email:
  *                 type: string
- *                 format: email
- *                 example: newemail@example.com
  *               avatarUrl:
  *                 type: string
- *                 example: https://example.com/new-avatar.jpg
  *     responses:
  *       200:
- *         description: User updated successfully
- *       404:
- *         description: User not found
- *       400:
- *         description: Bad request
+ *         description: Profile updated
  */
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /api/users/profile:
  *   delete:
- *     summary: Delete user
+ *     summary: Delete my account
  *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: User deleted successfully
- *       404:
- *         description: User not found
+ *         description: Account deleted
  */
 
 /**
  * @swagger
- * /api/users/{id}/follow:
+ * /api/users/follow:
  *   post:
  *     summary: Follow a manga
  *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -201,27 +137,19 @@ module.exports = router;
  *             properties:
  *               mangaId:
  *                 type: string
- *                 description: ID of the manga to follow
  *     responses:
  *       200:
- *         description: Successfully followed manga
- *       400:
- *         description: Bad request
+ *         description: Manga followed
  */
 
 /**
  * @swagger
- * /api/users/{id}/unfollow:
+ * /api/users/unfollow:
  *   post:
  *     summary: Unfollow a manga
  *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -233,67 +161,32 @@ module.exports = router;
  *             properties:
  *               mangaId:
  *                 type: string
- *                 description: ID of the manga to unfollow
  *     responses:
  *       200:
- *         description: Successfully unfollowed manga
- *       400:
- *         description: Bad request
+ *         description: Manga unfollowed
  */
 
 /**
  * @swagger
- * /api/users/{id}/reading-history:
+ * /api/users/reading-history:
  *   get:
- *     summary: Get user's reading history
+ *     summary: Get my reading history
  *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: User's reading history
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       manga:
- *                         $ref: '#/components/schemas/Manga'
- *                       lastChapterRead:
- *                         type: string
- *                       readAt:
- *                         type: string
- *                         format: date-time
- *       404:
- *         description: User not found
+ *         description: Reading history
  */
 
 /**
  * @swagger
- * /api/users/{id}/reading-history:
+ * /api/users/reading-history:
  *   post:
- *     summary: Update reading history
+ *     summary: Update my reading history
  *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -306,47 +199,115 @@ module.exports = router;
  *             properties:
  *               manga:
  *                 type: string
- *                 description: Manga ID
  *               chapterId:
  *                 type: string
- *                 description: Chapter ID that was read
  *     responses:
  *       200:
- *         description: Reading history updated
- *       404:
- *         description: User not found
- *       400:
- *         description: Bad request
+ *         description: History updated
  */
 
 /**
  * @swagger
- * /api/users/{id}/uploaded-mangas:
+ * /api/users/uploaded-mangas:
  *   get:
- *     summary: Get user's uploaded mangas
+ *     summary: Get my uploaded mangas
  *     tags: [Users]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of uploaded mangas
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Manga'
+ */
+
+/**
+ * @swagger
+ * /api/users/admin/user:
+ *   get:
+ *     summary: Get user by ID (Admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID to fetch
+ *     responses:
+ *       200:
+ *         description: User information
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (admin only)
  *       404:
  *         description: User not found
+ */
+
+/**
+ * @swagger
+ * /api/users/admin/update:
+ *   put:
+ *     summary: Update user by ID (Admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 description: User ID to update
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [reader, uploader, admin]
+ *               avatarUrl:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User updated
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (admin only)
+ */
+
+/**
+ * @swagger
+ * /api/users/admin/delete:
+ *   delete:
+ *     summary: Delete user by ID (Admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 description: User ID to delete
+ *     responses:
+ *       200:
+ *         description: User deleted
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (admin only)
  */
