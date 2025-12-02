@@ -472,6 +472,47 @@ class ChapterService {
             };
         }
     }
+
+    async getChapterCountByUploader(uploaderId) {
+        try {
+            // Tìm tất cả manga của uploader
+            const mangas = await Manga.find({ uploaderId: uploaderId }).select('_id');
+            
+            if (!mangas || mangas.length === 0) {
+                return {
+                    status: 'success',
+                    data: {
+                        uploaderId: uploaderId,
+                        totalChapters: 0,
+                        totalMangas: 0
+                    }
+                };
+            }
+
+            const mangaIds = mangas.map(manga => manga._id);
+            
+            // Đếm số chapter thuộc các manga của uploader
+            const chapterCount = await Chapter.countDocuments({ 
+                mangaId: { $in: mangaIds } 
+            });
+
+            return {
+                status: 'success',
+                data: {
+                    uploaderId: uploaderId,
+                    totalChapters: chapterCount,
+                    totalMangas: mangas.length
+                }
+            };
+
+        } catch (error) {
+            console.error('Get chapter count error:', error);
+            return {
+                status: 'error',
+                message: 'Failed to get chapter count: ' + error.message
+            };
+        }
+    }
 }
 
 module.exports = new ChapterService();
