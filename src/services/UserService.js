@@ -10,12 +10,12 @@ class UserService {
 
             // Build query
             const query = {};
-            
+
             // Optional: Add search/filter by role
             if (filter.role) {
                 query.role = filter.role;
             }
-            
+
             // Optional: Add search by username or email
             if (filter.search) {
                 query.$or = [
@@ -110,6 +110,28 @@ class UserService {
     async getUploadedMangas(id) {
         const user = await User.findById(id).populate('uploadedMangas');
         return user ? user.uploadedMangas : null;
+    }
+
+    async getFollowedMangas(userId) {
+        try {
+            const user = await User.findById(userId)
+                .populate({
+                    path: 'followedMangas',
+                    populate: [
+                        { path: 'uploader', select: 'username avatarUrl' },
+                        { path: 'genres', select: 'name' }
+                    ]
+                });
+            if (!user) {
+                throw new Error('User not found');
+            }
+            return {
+                status: 'success',
+                data: user.followedMangas
+            };
+        } catch (error) {
+            throw error;
+        }
     }
 }
 
