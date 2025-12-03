@@ -48,6 +48,19 @@ class GenreController {
             res.status(500).json({ status: 'error', message: 'Internal server error: ' + error.message });
         }
     }
+
+    async searchGenres(req, res) {
+        try {
+            const { query } = req.query;
+            const genres = await GenreService.searchGenres(query);
+            res.json(genres);
+        } catch (error) {
+            res.status(500).json({ 
+                status: 'error', 
+                message: 'Internal server error: ' + error.message 
+            });
+        }
+    }
 }
 
 module.exports = new GenreController();

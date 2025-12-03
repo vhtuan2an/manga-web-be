@@ -2,7 +2,9 @@ const GenreController = require('../controllers/GenreController');
 const express = require('express');
 const router = express.Router();
 
-router.get('/', GenreController.getAllGenres);
+// Đặt route search TRƯỚC route /:id để tránh conflict
+router.get('/search', GenreController.searchGenres);
+router.get("/", GenreController.getAllGenres)
 router.get('/:id', GenreController.getGenreById);
 router.post('/', GenreController.createGenre);
 router.put('/:id', GenreController.updateGenre);
@@ -185,4 +187,65 @@ module.exports = router;
  *                   example: Genre deleted
  *       404:
  *         description: Genre not found
+ */
+
+/**
+ * @swagger
+ * /api/genres/search:
+ *   get:
+ *     summary: Search genres by name or description
+ *     tags: [Genres]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         required: false
+ *         description: Search term for genre name or description (case-insensitive). If empty, returns all genres.
+ *         example: action
+ *     responses:
+ *       200:
+ *         description: List of matching genres with manga count
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                     description: Genre ID
+ *                     example: 674f1234567890abcdef1234
+ *                   name:
+ *                     type: string
+ *                     description: Genre name
+ *                     example: Action
+ *                   description:
+ *                     type: string
+ *                     description: Genre description
+ *                     example: Fast-paced stories with fighting and adventure
+ *                   mangaCount:
+ *                     type: integer
+ *                     description: Number of mangas in this genre
+ *                     example: 42
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *                   updatedAt:
+ *                     type: string
+ *                     format: date-time
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
  */

@@ -91,6 +91,43 @@ class GenreService {
             throw error;
         }
     }
+
+    async searchGenres(searchTerm) {
+        try {
+            if (!searchTerm || searchTerm.trim() === '') {
+                return await this.getAllGenres();
+            }
+
+            const genres = await Genre.find({
+                $or: [
+                    { name: { $regex: searchTerm, $options: 'i' } },
+                    { description: { $regex: searchTerm, $options: 'i' } }
+                ]
+            });
+
+            // Get manga count for each genre
+            const genresWithCount = await Promise.all(
+                genres.map(async (genre) => {
+                    const mangaCount = await Manga.countDocuments({ 
+                        genres: genre._id 
+                    });
+                    
+                    return {
+                        _id: genre._id,
+                        name: genre.name,
+                        description: genre.description,
+                        mangaCount: mangaCount,
+                        createdAt: genre.createdAt,
+                        updatedAt: genre.updatedAt
+                    };
+                })
+            );
+            
+            return genresWithCount;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 module.exports = new GenreService();
