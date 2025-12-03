@@ -24,6 +24,11 @@ router.delete(
   authMiddleware(["admin", "uploader"]),
   ChapterController.deleteChapter
 );
+router.get(
+  "/count/uploader",
+  authMiddleware(["uploader"]),
+  ChapterController.getChapterCountByUploader
+);
 
 module.exports = router;
 
@@ -196,6 +201,45 @@ module.exports = router;
  *                   $ref: '#/components/schemas/Chapter'
  *       404:
  *         description: Chapter not found
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/chapters/count/uploader:
+ *   get:
+ *     summary: Get chapter count for the current uploader
+ *     tags: [Chapters]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Chapter count retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     uploaderId:
+ *                       type: string
+ *                       description: ID of the uploader
+ *                     totalChapters:
+ *                       type: integer
+ *                       description: Total number of chapters uploaded
+ *                       example: 150
+ *                     totalMangas:
+ *                       type: integer
+ *                       description: Total number of mangas created by uploader
+ *                       example: 10
+ *       401:
+ *         description: Authentication required (uploader role)
  *       500:
  *         description: Internal server error
  */
