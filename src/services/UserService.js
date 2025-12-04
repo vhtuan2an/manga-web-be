@@ -36,14 +36,16 @@ class UserService {
 
             return {
                 status: 'success',
-                data: users,
-                pagination: {
-                    currentPage: page,
-                    totalPages: Math.ceil(total / limit),
-                    totalItems: total,
-                    itemsPerPage: limit,
-                    hasNextPage: page < Math.ceil(total / limit),
-                    hasPrevPage: page > 1
+                data: {
+                    users: users,
+                    pagination: {
+                        currentPage: page,
+                        totalPages: Math.ceil(total / limit),
+                        totalItems: total,
+                        itemsPerPage: limit,
+                        hasNextPage: page < Math.ceil(total / limit),
+                        hasPrevPage: page > 1
+                    }
                 }
             };
         } catch (error) {
