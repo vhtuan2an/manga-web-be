@@ -58,8 +58,11 @@ class AuthService {
             };
 
             return {
-                user: userResponse,
-                accessToken
+                status: 'success',
+                data: {
+                    user: userResponse,
+                    accessToken
+                }
             };
         } catch (error) {
             throw error;
@@ -124,7 +127,10 @@ class AuthService {
                 throw new Error('User not found');
             }
 
-            return user;
+            return {
+                status: 'success',
+                data: user
+            };
         } catch (error) {
             throw error;
         }

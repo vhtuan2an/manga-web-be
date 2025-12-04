@@ -38,28 +38,48 @@ class CommentService {
     }
 
     async getCommentsByManga(mangaId) {
-        return await Comment.find({ manga: mangaId }).populate('user', 'username').sort({ createdAt: -1 });
+        const comments = await Comment.find({ manga: mangaId }).populate('user', 'username').sort({ createdAt: -1 });
+        return {
+            status: 'success',
+            data: comments
+        };
     }
 
     async getCommentsByChapter(chapterId) {
-        return await Comment.find({ chapter: chapterId }).populate('user', 'username').sort({ createdAt: -1 });
+        const comments = await Comment.find({ chapter: chapterId }).populate('user', 'username').sort({ createdAt: -1 });
+        return {
+            status: 'success',
+            data: comments
+        };
     }
 
     async getCommentById(id) {
-        return await Comment.findById(id).populate('user', 'username');
+        const comment = await Comment.findById(id).populate('user', 'username');
+        return {
+            status: 'success',
+            data: comment
+        };
     }
 
     async updateComment(id, userId, content) {
         // Only allow the owner to update
-        return await Comment.findOneAndUpdate(
+        const comment = await Comment.findOneAndUpdate(
             { _id: id, user: userId },
             { content, updatedAt: new Date() },
             { new: true }
         );
+        return {
+            status: 'success',
+            data: comment
+        };
     }
 
     async deleteComment(id, userId) {
-        return await Comment.findOneAndDelete({ _id: id, user: userId });
+        const comment = await Comment.findOneAndDelete({ _id: id, user: userId });
+        return {
+            status: 'success',
+            data: comment
+        };
     }
 }
 

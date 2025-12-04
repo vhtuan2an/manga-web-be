@@ -52,7 +52,11 @@ class UserService {
     }
 
     async getUserById(id) {
-        return await User.findById(id).select('-password');
+        const user = await User.findById(id).select('-password');
+        return {
+            status: 'success',
+            data: user
+        };
     }
 
     async createUser(data) {
@@ -62,35 +66,54 @@ class UserService {
         }
         const result = await AuthService.register(userData);
         if (result.status === 'success') {
-            const user = result.data;
-            return { ...user._doc, password: undefined };
+            const user = result.data.user;
+            return {
+                status: 'success',
+                data: { ...user._doc, password: undefined }
+            };
         } else {
             throw new Error(result.message);
         }
     }
 
     async updateUser(id, updates) {
-        return await User.findByIdAndUpdate(id, updates, { new: true }).select('-password');
+        const user = await User.findByIdAndUpdate(id, updates, { new: true }).select('-password');
+        return {
+            status: 'success',
+            data: user
+        };
     }
 
     async deleteUser(id) {
-        return await User.findByIdAndDelete(id);
+        await User.findByIdAndDelete(id);
+        return {
+            status: 'success',
+            message: 'User deleted successfully'
+        };
     }
 
     async followManga(id, mangaId) {
-        return await User.findByIdAndUpdate(
+        const user = await User.findByIdAndUpdate(
             id,
             { $addToSet: { followedMangas: mangaId } },
             { new: true }
         );
+        return {
+            status: 'success',
+            data: user
+        };
     }
 
     async unfollowManga(id, mangaId) {
-        return await User.findByIdAndUpdate(
+        const user = await User.findByIdAndUpdate(
             id,
             { $pull: { followedMangas: mangaId } },
             { new: true }
         );
+        return {
+            status: 'success',
+            data: user
+        };
     }
 
     async updateReadingHistory(id, manga, chapterId) {
@@ -99,17 +122,26 @@ class UserService {
         user.readingHistory = user.readingHistory.filter(h => h.manga.toString() !== manga);
         user.readingHistory.push({ manga, chapterId, lastReadAt: new Date() });
         await user.save();
-        return user;
+        return {
+            status: 'success',
+            data: user
+        };
     }
 
     async getReadingHistory(id) {
         const user = await User.findById(id).select('readingHistory');
-        return user ? user.readingHistory : null;
+        return {
+            status: 'success',
+            data: user ? user.readingHistory : null
+        };
     }
 
     async getUploadedMangas(id) {
         const user = await User.findById(id).populate('uploadedMangas');
-        return user ? user.uploadedMangas : null;
+        return {
+            status: 'success',
+            data: user ? user.uploadedMangas : null
+        };
     }
 
     async getFollowedMangas(userId) {

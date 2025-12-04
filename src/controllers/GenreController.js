@@ -13,7 +13,7 @@ class GenreController {
     async getGenreById(req, res) {
         try {
             const genre = await GenreService.getGenreById(req.params.id);
-            if (!genre) return res.status(404).json({ status: 'error', message: 'Genre not found' });
+            if (!genre.data) return res.status(404).json({ status: 'error', message: 'Genre not found' });
             res.json(genre);
         } catch (error) {
             res.status(500).json({ status: 'error', message: 'Internal server error: ' + error.message });
@@ -32,7 +32,7 @@ class GenreController {
     async updateGenre(req, res) {
         try {
             const genre = await GenreService.updateGenre(req.params.id, req.body);
-            if (!genre) return res.status(404).json({ status: 'error', message: 'Genre not found' });
+            if (!genre.data) return res.status(404).json({ status: 'error', message: 'Genre not found' });
             res.json(genre);
         } catch (error) {
             res.status(400).json({ status: 'error', message: 'Bad request: ' + error.message });
@@ -42,8 +42,8 @@ class GenreController {
     async deleteGenre(req, res) {
         try {
             const genre = await GenreService.deleteGenre(req.params.id);
-            if (!genre) return res.status(404).json({ status: 'error', message: 'Genre not found' });
-            res.json({ message: 'Genre deleted' });
+            if (!genre.data) return res.status(404).json({ status: 'error', message: 'Genre not found' });
+            res.json({ status: 'success', message: 'Genre deleted' });
         } catch (error) {
             res.status(500).json({ status: 'error', message: 'Internal server error: ' + error.message });
         }

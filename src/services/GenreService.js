@@ -24,7 +24,10 @@ class GenreService {
                 })
             );
             
-            return genresWithCount;
+            return {
+                status: 'success',
+                data: genresWithCount
+            };
         } catch (error) {
             throw error;
         }
@@ -41,12 +44,15 @@ class GenreService {
             });
             
             return {
-                _id: genre._id,
-                name: genre.name,
-                description: genre.description,
-                mangaCount: mangaCount,
-                createdAt: genre.createdAt,
-                updatedAt: genre.updatedAt
+                status: 'success',
+                data: {
+                    _id: genre._id,
+                    name: genre.name,
+                    description: genre.description,
+                    mangaCount: mangaCount,
+                    createdAt: genre.createdAt,
+                    updatedAt: genre.updatedAt
+                }
             };
         } catch (error) {
             throw error;
@@ -58,8 +64,11 @@ class GenreService {
             const genre = new Genre(genreData);
             await genre.save();
             return {
-                ...genre.toObject(),
-                mangaCount: 0
+                status: 'success',
+                data: {
+                    ...genre.toObject(),
+                    mangaCount: 0
+                }
             };
         } catch (error) {
             throw error;
@@ -76,8 +85,11 @@ class GenreService {
             });
             
             return {
-                ...genre.toObject(),
-                mangaCount: mangaCount
+                status: 'success',
+                data: {
+                    ...genre.toObject(),
+                    mangaCount: mangaCount
+                }
             };
         } catch (error) {
             throw error;
@@ -86,7 +98,11 @@ class GenreService {
 
     async deleteGenre(id) {
         try {
-            return await Genre.findByIdAndDelete(id);
+            const genre = await Genre.findByIdAndDelete(id);
+            return {
+                status: 'success',
+                data: genre
+            };
         } catch (error) {
             throw error;
         }
@@ -123,7 +139,10 @@ class GenreService {
                 })
             );
             
-            return genresWithCount;
+            return {
+                status: 'success',
+                data: genresWithCount
+            };
         } catch (error) {
             throw error;
         }

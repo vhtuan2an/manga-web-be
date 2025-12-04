@@ -38,7 +38,11 @@ class RatingService {
     }
 
     async getUserRatingForManga(userId, mangaId) {
-        return await Rating.findOne({ user: userId, manga: mangaId });
+        const rating = await Rating.findOne({ user: userId, manga: mangaId });
+        return {
+            status: 'success',
+            data: rating
+        };
     }
 
     async getMangaAverageRating(mangaId) {
