@@ -1,5 +1,5 @@
 const Comment = require('../models/Comment');
-const AuthService = require('./AuthService');
+const UserService = require('./UserService');
 
 class CommentService {
     async createComment(data) {
@@ -14,7 +14,7 @@ class CommentService {
             return { status: 'error', message: 'Must specify either manga or chapter' };
         }
 
-        const userResult = await AuthService.getUserById(userId);
+        const userResult = await UserService.getUserById(userId);
         if (userResult.status === 'error') {
             return { status: 'error', message: 'User not found' };
         }
