@@ -1,6 +1,6 @@
 const Rating = require('../models/Rating');
 const Manga = require('../models/Manga');
-const AuthService = require('./AuthService');
+const UserService = require('./UserService');
 const mongoose = require('mongoose');
 
 class RatingService {
@@ -16,7 +16,7 @@ class RatingService {
         }
 
         // Validate user exists and is allowed to rate
-        const userResult = await AuthService.getUserById(userId);
+        const userResult = await UserService.getUserById(userId);
         if (userResult.status === 'error') {
             return { status: 'error', message: 'User not found' };
         }
