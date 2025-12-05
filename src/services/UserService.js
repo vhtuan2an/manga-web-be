@@ -152,7 +152,7 @@ class UserService {
                 .populate({
                     path: 'followedMangas',
                     populate: [
-                        { path: 'uploader', select: 'username avatarUrl' },
+                        { path: 'uploaderId', select: 'username avatarUrl' },
                         { path: 'genres', select: 'name' }
                     ]
                 });
