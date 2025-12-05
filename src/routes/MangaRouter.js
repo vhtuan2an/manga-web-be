@@ -5,8 +5,10 @@ const { uploadSingle } = require('../middlewares/UploadMiddlewares');
 const { checkMangaOwnership } = require('../middlewares/CheckMangaOwnership');
 const router = express.Router();
 
+
 router.post('/', authMiddleware(['uploader']), uploadSingle, MangaController.createManga);
 router.get('/', MangaController.getMangaList);
+router.get('/search', MangaController.searchManga);
 router.get('/:id', MangaController.getMangaById);
 router.put('/:id', authMiddleware(['uploader']), uploadSingle, checkMangaOwnership, MangaController.updateManga);
 router.delete('/:id', authMiddleware(['admin', 'uploader']), checkMangaOwnership, MangaController.deleteManga);
@@ -14,6 +16,7 @@ router.get('/:mangaId/chapters', MangaController.getChapterList);
 router.get('/count/genre/:genreId', MangaController.getMangaCountByGenre);
 
 module.exports = router;
+
 
 /**
  * @swagger
@@ -129,6 +132,110 @@ module.exports = router;
  *                     totalItems:
  *                       type: integer
  */
+
+/**
+ * @swagger
+ * /api/mangas/search:
+ *   get:
+ *     summary: Search and filter mangas
+ *     description: Comprehensive search API supporting search by title/author, filter by status/genres, and various sorting options
+ *     tags: [Manga]
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by manga title or author name (case-insensitive)
+ *         example: "Naruto"
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [ongoing, completed]
+ *         description: Filter by manga status
+ *         example: "ongoing"
+ *       - in: query
+ *         name: genres
+ *         schema:
+ *           type: string
+ *         description: Filter by genre IDs (comma-separated for multiple genres)
+ *         example: "64f8a1b2c3d4e5f6a7b8c9d0,64f8a1b2c3d4e5f6a7b8c9d1"
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [newest, oldest, mostViewed, highestRating, mostFollowed, az, za, updated]
+ *           default: newest
+ *         description: |
+ *           Sort options:
+ *           - newest: Mới nhất (newest first)
+ *           - oldest: Cũ nhất (oldest first)
+ *           - mostViewed: Xem nhiều nhất (most viewed)
+ *           - highestRating: Đánh giá cao nhất (highest rating)
+ *           - mostFollowed: Theo dõi nhiều nhất (most followed)
+ *           - az: A-Z (alphabetical ascending)
+ *           - za: Z-A (alphabetical descending)
+ *           - updated: Cập nhật gần đây (recently updated)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: Search results with pagination and applied filters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     mangas:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Manga'
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         currentPage:
+ *                           type: integer
+ *                           example: 1
+ *                         totalPages:
+ *                           type: integer
+ *                           example: 5
+ *                         totalItems:
+ *                           type: integer
+ *                           example: 100
+ *                         limit:
+ *                           type: integer
+ *                           example: 20
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: Failed to search manga
+ */
+
 
 /**
  * @swagger

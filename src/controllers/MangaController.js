@@ -104,6 +104,22 @@ class MangaController {
         }
     }
 
+    async searchManga(req, res) {
+        try {
+            const searchParams = req.query;
+            const result = await MangaService.searchManga(searchParams);
+            if (result.status === 'error') {
+                return res.status(422).json(result);
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(500).json({
+                status: 'error',
+                message: 'Internal server error: ' + error.message
+            });
+        }
+    }
+
     async getMangaById(req, res) {
         try {
             const { id } = req.params;

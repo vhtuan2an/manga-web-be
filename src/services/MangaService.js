@@ -179,6 +179,122 @@ class MangaService {
     }
   }
 
+  async searchManga(searchParams = {}) {
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        search = "",
+        status,
+        genres,
+        sortBy = "newest",
+      } = searchParams;
+
+      const query = {};
+
+      // Search by title or author
+      if (search && search.trim() !== "") {
+        query.$or = [
+          { title: { $regex: search.trim(), $options: "i" } },
+          { author: { $regex: search.trim(), $options: "i" } },
+        ];
+      }
+
+      // Filter by status
+      if (status && status.trim() !== "") {
+        query.status = status;
+      }
+
+      // Filter by genres (support multiple genres)
+      if (genres) {
+        let genreArray = [];
+        
+        // Handle different input formats
+        if (typeof genres === "string") {
+          // If it's a comma-separated string
+          genreArray = genres.split(",").map(g => g.trim()).filter(g => g !== "");
+        } else if (Array.isArray(genres)) {
+          genreArray = genres;
+        }
+
+        // Convert to ObjectIds and filter
+        const validGenreIds = genreArray
+          .filter(id => mongoose.Types.ObjectId.isValid(id))
+          .map(id => new mongoose.Types.ObjectId(id));
+
+        if (validGenreIds.length > 0) {
+          query.genres = { $in: validGenreIds };
+        }
+      }
+
+      // Parse sort options
+      let sortOptions = {};
+      switch (sortBy) {
+        case "newest":
+          sortOptions.createdAt = -1;
+          break;
+        case "oldest":
+          sortOptions.createdAt = 1;
+          break;
+        case "mostViewed":
+          sortOptions.viewCount = -1;
+          break;
+        case "highestRating":
+          sortOptions.averageRating = -1;
+          break;
+        case "mostFollowed":
+          sortOptions.followedCount = -1;
+          break;
+        case "az":
+          sortOptions.title = 1;
+          break;
+        case "za":
+          sortOptions.title = -1;
+          break;
+        case "updated":
+          sortOptions.updatedAt = -1;
+          break;
+        default:
+          sortOptions.createdAt = -1; // Default to newest
+      }
+
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const skip = (pageNum - 1) * limitNum;
+
+      // Execute query with pagination
+      const mangas = await Manga.find(query)
+        .populate("genres", "name")
+        .populate("uploaderId", "username")
+        .skip(skip)
+        .limit(limitNum)
+        .sort(sortOptions)
+        .lean();
+
+      // Get total count for pagination
+      const totalItems = await Manga.countDocuments(query);
+      const totalPages = Math.ceil(totalItems / limitNum);
+
+      return {
+        status: "success",
+        data: {
+          mangas,
+          pagination: {
+            currentPage: pageNum,
+            totalPages,
+            totalItems,
+            limit: limitNum,
+          },
+        },
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        message: "Failed to search manga: " + error.message,
+      };
+    }
+  }
+
   async getMangaById(mangaId) {
     try {
       const manga = await Manga.findById(mangaId)
