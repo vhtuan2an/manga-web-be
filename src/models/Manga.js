@@ -42,6 +42,18 @@ const mangaSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+        chapterCount: {
+            type: Number,
+            default: 0,
+        },
+        rawCount: {
+            type: Number,
+            default: 0,
+        },
+        progress: {
+            type: Number,
+            default: 0,
+        },
         averageRating: {
             type: Number,
             default: 0,
