@@ -3,6 +3,9 @@ const router = express.Router();
 const CommentController = require('../controllers/CommentController');
 const { authMiddleware } = require('../middlewares/AuthMiddleware');
 
+
+router.get('/uploader', authMiddleware(['uploader']), CommentController.getCommentsByUploader);
+
 router.post('/', authMiddleware(['reader', 'uploader', 'admin']), CommentController.createComment);
 router.get('/manga/:mangaId', CommentController.getCommentsByManga);
 router.get('/chapter/:chapterId', CommentController.getCommentsByChapter);

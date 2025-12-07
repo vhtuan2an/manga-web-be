@@ -1,7 +1,26 @@
 const Comment = require('../models/Comment');
 const UserService = require('./UserService');
+const Manga = require('../models/Manga');
 
 class CommentService {
+    async getCommentsByUploader(uploaderId) {
+        // 1. Get all mangas uploaded by this user
+        const mangas = await Manga.find({ uploaderId: uploaderId }).select('_id title');
+        const mangaIds = mangas.map(m => m._id);
+
+        // 2. Find comments where manga is in mangaIds
+        const comments = await Comment.find({ manga: { $in: mangaIds } })
+            .populate('user', 'username avatar')
+            .populate('manga', 'title')
+            .populate('chapter', 'chapterNumber title')
+            .sort({ createdAt: -1 });
+
+        return {
+            status: 'success',
+            data: comments
+        };
+    }
+
     async createComment(data) {
         const { userId, manga, chapter, content } = data;
         if (!userId) {

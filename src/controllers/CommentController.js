@@ -21,6 +21,20 @@ class CommentController {
 		}
 	}
 
+	// GET /api/comments/uploader
+	async getCommentsByUploader(req, res) {
+		try {
+			const uploaderId = req.id;
+			const result = await CommentService.getCommentsByUploader(uploaderId);
+			if (result.status === 'error') {
+				return res.status(500).json(result);
+			}
+			return res.json(result);
+		} catch (error) {
+			return res.status(500).json({ status: 'error', message: error.message });
+		}
+	}
+
 	// GET /api/comments/manga/:mangaId
 	async getCommentsByManga(req, res) {
 		try {
