@@ -21,11 +21,25 @@ class CommentController {
 		}
 	}
 
+	// GET /api/comments/uploader
+	async getCommentsByUploader(req, res) {
+		try {
+			const uploaderId = req.id;
+			const result = await CommentService.getCommentsByUploader(uploaderId);
+			if (result.status === 'error') {
+				return res.status(500).json(result);
+			}
+			return res.json(result);
+		} catch (error) {
+			return res.status(500).json({ status: 'error', message: error.message });
+		}
+	}
+
 	// GET /api/comments/manga/:mangaId
 	async getCommentsByManga(req, res) {
 		try {
 			const comments = await CommentService.getCommentsByManga(req.params.mangaId);
-			return res.json({ status: 'success', data: comments });
+			return res.json(comments);
 		} catch (error) {
 			return res.status(500).json({ status: 'error', message: error.message });
 		}
@@ -35,7 +49,7 @@ class CommentController {
 	async getCommentsByChapter(req, res) {
 		try {
 			const comments = await CommentService.getCommentsByChapter(req.params.chapterId);
-			return res.json({ status: 'success', data: comments });
+			return res.json(comments);
 		} catch (error) {
 			return res.status(500).json({ status: 'error', message: error.message });
 		}
@@ -50,10 +64,10 @@ class CommentController {
 				return res.status(401).json({ status: 'error', message: 'Authentication required' });
 			}
 			const comment = await CommentService.updateComment(req.params.id, userId, content);
-			if (!comment) {
+			if (!comment.data) {
 				return res.status(403).json({ status: 'error', message: 'Not allowed or not found' });
 			}
-			return res.json({ status: 'success', data: comment });
+			return res.json(comment);
 		} catch (error) {
 			return res.status(500).json({ status: 'error', message: error.message });
 		}
@@ -67,7 +81,7 @@ class CommentController {
 				return res.status(401).json({ status: 'error', message: 'Authentication required' });
 			}
 			const comment = await CommentService.deleteComment(req.params.id, userId);
-			if (!comment) {
+			if (!comment.data) {
 				return res.status(403).json({ status: 'error', message: 'Not allowed or not found' });
 			}
 			return res.json({ status: 'success', message: 'Comment deleted' });

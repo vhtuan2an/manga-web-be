@@ -20,7 +20,7 @@ const authMiddleware = (allowedRoles = []) => {
     } else {
       try {
         // Giải mã token
-        const deCodeToken = await jwt.verify(
+        const deCodeToken = jwt.verify(
           accessToken,
           process.env.ACCESS_TOKEN_SECRET
         );

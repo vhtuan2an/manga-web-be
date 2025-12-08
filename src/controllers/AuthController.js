@@ -1,4 +1,5 @@
 const AuthService = require('../services/AuthService');
+const UserService = require('../services/UserService');
 
 class AuthController {
     async register(req, res) {
@@ -22,7 +23,7 @@ class AuthController {
 
     async getUserInfo(req, res) {
         const userId = req.id;
-        const result = await AuthService.getUserById(userId);
+        const result = await UserService.getUserById(userId);
         if (result.status === 'error') {
             return res.status(404).json(result);
         }

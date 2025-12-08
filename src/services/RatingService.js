@@ -1,7 +1,7 @@
-
 const Rating = require('../models/Rating');
 const Manga = require('../models/Manga');
-const AuthService = require('./AuthService');
+const UserService = require('./UserService');
+const mongoose = require('mongoose');
 
 class RatingService {
     async rateManga(userId, mangaId, star) {
@@ -16,7 +16,7 @@ class RatingService {
         }
 
         // Validate user exists and is allowed to rate
-        const userResult = await AuthService.getUserById(userId);
+        const userResult = await UserService.getUserById(userId);
         if (userResult.status === 'error') {
             return { status: 'error', message: 'User not found' };
         }
@@ -38,23 +38,42 @@ class RatingService {
     }
 
     async getUserRatingForManga(userId, mangaId) {
-        return await Rating.findOne({ user: userId, manga: mangaId });
+        const rating = await Rating.findOne({ user: userId, manga: mangaId });
+        return {
+            status: 'success',
+            data: rating
+        };
     }
 
     async getMangaAverageRating(mangaId) {
-        const result = await Rating.aggregate([
-            { $match: { manga: typeof mangaId === 'string' ? require('mongoose').Types.ObjectId(mangaId) : mangaId } },
-            { $group: { _id: '$manga', avg: { $avg: '$star' }, count: { $sum: 1 } } }
-        ]);
-        if (result.length === 0) {
-            return { status: 'success', average: 0, count: 0 };
+        try {
+            // Convert string to ObjectId if needed
+            const objectId = typeof mangaId === 'string' ? new mongoose.Types.ObjectId(mangaId) : mangaId;
+            
+            const result = await Rating.aggregate([
+                { $match: { manga: objectId } },
+                { $group: { _id: '$manga', avg: { $avg: '$star' }, count: { $sum: 1 } } }
+            ]);
+            
+            if (result.length === 0) {
+                return { status: 'success', average: 0, count: 0 };
+            }
+            return { status: 'success', average: result[0].avg, count: result[0].count };
+        } catch (error) {
+            console.error('Error in getMangaAverageRating:', error);
+            return { status: 'error', message: 'Failed to get average rating: ' + error.message };
         }
-        return { status: 'success', average: result[0].avg, count: result[0].count };
     }
 
     async updateMangaAverageRating(mangaId) {
-        const avgResult = await this.getMangaAverageRating(mangaId);
-        await Manga.findByIdAndUpdate(mangaId, { averageRating: avgResult.average || 0 });
+        try {
+            const avgResult = await this.getMangaAverageRating(mangaId);
+            if (avgResult.status === 'success') {
+                await Manga.findByIdAndUpdate(mangaId, { averageRating: avgResult.average || 0 });
+            }
+        } catch (error) {
+            console.error('Error updating manga average rating:', error);
+        }
     }
 }
 

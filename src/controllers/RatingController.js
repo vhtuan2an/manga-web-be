@@ -36,7 +36,7 @@ class RatingController {
                 return res.status(401).json({ status: 'error', message: 'Authentication required' });
             }
             const rating = await RatingService.getUserRatingForManga(userId, mangaId);
-            return res.json({ status: 'success', data: rating });
+            return res.json(rating);
         } catch (error) {
             return res.status(500).json({ status: 'error', message: error.message });
         }

@@ -8,11 +8,11 @@ class MangaController {
             console.log('req.body:', req.body);
             console.log('req.file:', req.file);
 
-            let mangaData = { 
+            let mangaData = {
                 uploaderId: req.id,
-                ...req.body 
+                ...req.body
             };
-            
+
             // Xử lý genres từ form-data
             if (req.body.genres) {
                 if (typeof req.body.genres === 'string') {
@@ -29,7 +29,7 @@ class MangaController {
 
             // Gán uploaderId từ token
             mangaData.uploaderId = req.id;
-            
+
             const coverImage = req.file;
             let coverImageBuffer = null;
             if (coverImage) {
@@ -54,7 +54,7 @@ class MangaController {
             const { id } = req.params;
 
             let updateData = { ...req.body };
-            
+
             // Handle genres processing
             if (req.body.genres) {
                 if (typeof req.body.genres === 'string') {
@@ -104,12 +104,45 @@ class MangaController {
         }
     }
 
+    async searchManga(req, res) {
+        try {
+            const searchParams = req.query;
+            const result = await MangaService.searchManga(searchParams);
+            if (result.status === 'error') {
+                return res.status(422).json(result);
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(500).json({
+                status: 'error',
+                message: 'Internal server error: ' + error.message
+            });
+        }
+    }
+
     async getMangaById(req, res) {
         try {
             const { id } = req.params;
             const result = await MangaService.getMangaById(id);
             if (result.status === 'error') {
                 return res.status(404).json(result);
+            }
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(500).json({
+                status: 'error',
+                message: 'Internal server error: ' + error.message
+            });
+        }
+    }
+
+    async getMangaByGenre(req, res) {
+        try {
+            const { genreId } = req.params;
+            const filter = { ...req.query, genre: genreId };
+            const result = await MangaService.getMangaList(filter);
+            if (result.status === 'error') {
+                return res.status(422).json(result);
             }
             return res.status(200).json(result);
         } catch (error) {
@@ -143,6 +176,24 @@ class MangaController {
             if (result.status === 'error') {
                 return res.status(422).json(result);
             }
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(500).json({
+                status: 'error',
+                message: 'Internal server error: ' + error.message
+            });
+        }
+    }
+
+    async getMangaCountByGenre(req, res) {
+        try {
+            const { genreId } = req.params;
+            const result = await MangaService.getMangaCountByGenre(genreId);
+            
+            if (result.status === 'error') {
+                return res.status(404).json(result);
+            }
+            
             return res.status(200).json(result);
         } catch (error) {
             return res.status(500).json({
