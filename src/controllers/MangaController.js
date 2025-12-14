@@ -2,7 +2,7 @@ const { uploader } = require('../config/cloudinary');
 const MangaService = require('../services/MangaService');
 
 class MangaController {
-    async createManga(req, res) {
+    async createManga(req, res, next) {
         try {
             // Log để debug
             console.log('req.body:', req.body);
@@ -37,19 +37,14 @@ class MangaController {
             }
 
             const result = await MangaService.createManga(mangaData, coverImageBuffer);
-            if (result.status === 'error') {
-                return res.status(422).json(result);
-            }
-            return res.status(201).json(result);
+
+            res.status(201).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async updateManga(req, res) {
+    async updateManga(req, res, next) {
         try {
             const { id } = req.params;
 
@@ -75,131 +70,83 @@ class MangaController {
                 coverImageBuffer = coverImage.buffer;
             }
 
-            const result = await MangaService.updateManga(id, updateData, coverImageBuffer);
-            if (result.status === 'error') {
-                return res.status(422).json(result);
-            }
-            return res.status(200).json(result);
+            const result = await MangaService.updateManga(mangaId, updateData, coverImageBuffer);
+
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async getMangaList(req, res) {
+    async getMangaList(req, res, next) {
         try {
-            const filter = req.query;
-            const result = await MangaService.getMangaList(filter);
-            if (result.status === 'error') {
-                return res.status(422).json(result);
-            }
-            return res.status(200).json(result);
+            const result = await MangaService.getMangaList(req.query);
+
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async searchManga(req, res) {
+    async searchManga(req, res, next) {
         try {
-            const searchParams = req.query;
-            const result = await MangaService.searchManga(searchParams);
-            if (result.status === 'error') {
-                return res.status(422).json(result);
-            }
-            return res.status(200).json(result);
+            const result = await MangaService.searchManga(req.query);
+
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async getMangaById(req, res) {
+    async getMangaById(req, res, next) {
         try {
-            const { id } = req.params;
-            const result = await MangaService.getMangaById(id);
-            if (result.status === 'error') {
-                return res.status(404).json(result);
-            }
-            return res.status(200).json(result);
+            const result = await MangaService.getMangaById(req.params.id);
+
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async getMangaByGenre(req, res) {
+    async getMangaByGenre(req, res, next) {
         try {
             const { genreId } = req.params;
             const filter = { ...req.query, genre: genreId };
             const result = await MangaService.getMangaList(filter);
-            if (result.status === 'error') {
-                return res.status(422).json(result);
-            }
-            return res.status(200).json(result);
+
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async deleteManga(req, res) {
+    async deleteManga(req, res, next) {
         try {
-            const { id } = req.params;
-            const result = await MangaService.deleteManga(id);
-            if (result.status === 'error') {
-                return res.status(404).json(result);
-            }
-            return res.status(200).json(result);
+            const result = await MangaService.deleteManga(req.params.id);
+
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async getChapterList(req, res) {
+    async getChapterList(req, res, next) {
         try {
-            const { mangaId } = req.params;
-            const result = await MangaService.getChapterList(mangaId);
-            if (result.status === 'error') {
-                return res.status(422).json(result);
-            }
-            return res.status(200).json(result);
+            const result = await MangaService.getChapterList(req.params.mangaId);
+
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async getMangaCountByGenre(req, res) {
+    async getMangaCountByGenre(req, res, next) {
         try {
-            const { genreId } = req.params;
-            const result = await MangaService.getMangaCountByGenre(genreId);
-            
-            if (result.status === 'error') {
-                return res.status(404).json(result);
-            }
-            
-            return res.status(200).json(result);
+            const result = await MangaService.getMangaCountByGenre(req.params.genreId);
+
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 }

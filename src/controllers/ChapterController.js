@@ -1,7 +1,8 @@
 const ChapterService = require('../services/ChapterService');
+const ApiError = require('../utils/ApiErrorUtils');
 
 class ChapterController {
-    async uploadChapter(req, res) {
+    async uploadChapter(req, res, next) {
         try {
             const { mangaId } = req.params;
             const chapterData = req.body;
@@ -19,39 +20,25 @@ class ChapterController {
 
             const result = await ChapterService.uploadChapter(mangaId, chapterData, pages, thumbnail);
 
-            if (result.status === 'error') {
-                return res.status(422).json(result);
-            }
-
-            return res.status(201).json(result);
-
+            res.status(201).json(result);
         } catch (error) {
             console.error('Upload chapter error:', error);
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async getChapterById(req, res) {
+    async getChapterById(req, res, next) {
         try {
             const { chapterId } = req.params;
             const result = await ChapterService.getChapterById(chapterId);
 
-            if (result.status === 'error') {
-                return res.status(404).json(result);
-            }
-            return res.status(200).json(result);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async updateChapter(req, res) {
+    async updateChapter(req, res, next) {
         try {
             const { chapterId } = req.params;
             const chapterData = req.body;
@@ -69,57 +56,33 @@ class ChapterController {
 
             const result = await ChapterService.updateChapter(chapterId, chapterData, pages, userId, thumbnail);
 
-            if (result.status === 'error') {
-                const statusCode = result.message.includes('not found') ? 404 : 
-                                 result.message.includes('not authorized') ? 403 : 422;
-                return res.status(statusCode).json(result);
-            }
-
-            return res.status(200).json(result);
-
+            res.status(200).json(result);
         } catch (error) {
             console.error('Update chapter error:', error);
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async deleteChapter(req, res) {
+    async deleteChapter(req, res, next) {
         try {
             const { chapterId } = req.params;
             const userId = req.id;
             const result = await ChapterService.deleteChapter(chapterId, userId);
 
-            if (result.status === 'error') {
-                const statusCode = result.message.includes('not found') ? 404 : 
-                                 result.message.includes('not authorized') ? 403 : 422;
-                return res.status(statusCode).json(result);
-            }
-            return res.status(200).json(result);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
-    async getChapterCountByUploader(req, res) {
+    async getChapterCountByUploader(req, res, next) {
         try {
             const uploaderId = req.id; // Lấy từ authMiddleware
             const result = await ChapterService.getChapterCountByUploader(uploaderId);
 
-            if (result.status === 'error') {
-                return res.status(500).json(result);
-            }
-            return res.status(200).json(result);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 }

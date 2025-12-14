@@ -1,5 +1,6 @@
 const AuthService = require('./AuthService');
 const User = require('../models/User');
+const Manga = require('../models/Manga');
 
 class UserService {
     async getAllUsers(filter = {}) {
@@ -95,26 +96,55 @@ class UserService {
     }
 
     async followManga(id, mangaId) {
-        const user = await User.findByIdAndUpdate(
+        const user = await User.findById(id);
+        const isFollowing = user.followedMangas.some(
+            manga => manga.toString() === mangaId.toString()
+        );
+        const updatedUser = await User.findByIdAndUpdate(
             id,
             { $addToSet: { followedMangas: mangaId } },
             { new: true }
         );
+        if (!isFollowing) {
+            await Manga.findByIdAndUpdate(
+                mangaId,
+                { $inc: { followedCount: 1 } }
+            );
+        }
+
         return {
             status: 'success',
-            data: user
+            data: updatedUser,
+            message: 'Manga followed successfully'
         };
     }
 
     async unfollowManga(id, mangaId) {
-        const user = await User.findByIdAndUpdate(
+        const user = await User.findById(id);
+        const isFollowing = user.followedMangas.some(
+            manga => manga.toString() === mangaId.toString()
+        );
+        const updatedUser = await User.findByIdAndUpdate(
             id,
             { $pull: { followedMangas: mangaId } },
             { new: true }
         );
+        if (isFollowing) {
+            await Manga.findByIdAndUpdate(
+                mangaId,
+                { $inc: { followedCount: -1 } }
+            );
+            // followedCount >= 0
+            await Manga.updateOne(
+                { _id: mangaId, followedCount: { $lt: 0 } },
+                { $set: { followedCount: 0 } }
+            );
+        }
+
         return {
             status: 'success',
-            data: user
+            data: updatedUser,
+            message: 'Manga unfollowed successfully'
         };
     }
 
