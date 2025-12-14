@@ -23,6 +23,37 @@ module.exports = router;
 
 /**
  * @swagger
+ * /api/comments/uploader:
+ *   get:
+ *     summary: Get all comments on my uploaded mangas (Uploader only)
+ *     tags: [Comments]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Comments on uploader's mangas retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Comment'
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Uploader access required
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
  * /api/comments:
  *   post:
  *     summary: Create a new comment
