@@ -56,7 +56,7 @@ class GoogleAIUtils {
             const mangas = await Manga.find({
                 genres: { $in: genreIds }
             })
-            .select('_id name description genres')
+            .select('_id title description genres')
             .populate('genres', 'name')
             .limit(20) // Limit to prevent too much data
             .lean();
@@ -80,7 +80,7 @@ class GoogleAIUtils {
 
 Và danh sách manga hiện có sau đây:
 ${mangaData.map((manga, index) => 
-    `${index + 1}. Tên: ${manga.title}
+    `${index + 1}. Tên: ${manga.name}
    Thể loại: ${manga.genres}
    Mô tả: ${manga.description}
    ID: ${manga.id}`
