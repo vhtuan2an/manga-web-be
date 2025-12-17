@@ -207,6 +207,45 @@ module.exports = router;
 
 /**
  * @swagger
+ * /api/chapters/{chapterId}:
+ *   delete:
+ *     summary: Delete a chapter
+ *     tags: [Chapters]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chapterId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Chapter ID to delete
+ *     responses:
+ *       200:
+ *         description: Chapter deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Chapter deleted successfully
+ *       401:
+ *         description: Authentication required (admin or uploader role)
+ *       403:
+ *         description: Not authorized to delete this chapter
+ *       404:
+ *         description: Chapter not found
+ *       500:
+ *         description: Internal server error
+ */
+
+/**
+ * @swagger
  * /api/chapters/count/uploader:
  *   get:
  *     summary: Get chapter count for the current uploader

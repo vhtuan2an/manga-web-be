@@ -37,37 +37,36 @@ module.exports = router;
  *                 maxLength: 500
  *     responses:
  *       200:
- *         description: AI-generated manga recommendations
+ *         description: AI-generated manga recommendations based on user description
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 recommendations:
+ *                 suggestedGenres:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: List of genre names that match the user's description
+ *                   example: ["Action", "Romance", "Supernatural"]
+ *                 recommendedMangas:
  *                   type: array
  *                   items:
  *                     type: object
  *                     properties:
- *                       title:
+ *                       id:
  *                         type: string
- *                         example: "Shadow Blade Chronicles"
- *                       description:
+ *                         description: Manga ID
+ *                         example: "64f8a1b2c3d4e5f6a7b8c9d0"
+ *                       name:
  *                         type: string
- *                         example: "A thrilling tale of a young ninja discovering mystical powers while navigating forbidden love"
- *                       genres:
- *                         type: array
- *                         items:
- *                           type: string
- *                         example: ["Action", "Romance", "Supernatural"]
- *                       suggestedAuthor:
+ *                         description: Manga title
+ *                         example: "Naruto"
+ *                       reason:
  *                         type: string
- *                         example: "Masashi Kishimoto"
- *                       estimatedChapters:
- *                         type: integer
- *                         example: 200
+ *                         description: Brief explanation why this manga is recommended (1-2 sentences)
+ *                         example: "Phù hợp với thể loại hành động và có yếu tố siêu nhiên mà bạn quan tâm"
+ *                   description: List of recommended manga from database sorted by relevance
  *       400:
  *         description: Missing or invalid description
  *         content:

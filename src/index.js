@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const routes = require('./routes');
+const errorHandler = require('./middlewares/ErrorMiddleware');
 const dotenv = require('dotenv');
 const { specs, swaggerUi, swaggerOptions } = require('./config/swagger');
 
@@ -22,6 +23,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerOptions)); /
 const PORT = process.env.PORT || 3001;
 
 routes(app);
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

@@ -1,126 +1,96 @@
 const UserService = require('../services/UserService');
+const ApiError = require('../utils/ApiErrorUtils');
 
 class UserController {
-    async getAllUsers(req, res) {
+    async getAllUsers(req, res, next) {
         try {
-            const filter = req.query;
-            const result = await UserService.getAllUsers(filter);
-            res.json(result);
+            const result = await UserService.getAllUsers(req.query);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(500).json({
-                status: 'error',
-                message: 'Internal server error: ' + error.message
-            });
+            next(error);
         }
     }
 
     // User operations (uses req.id from authMiddleware)
-    async getMyProfile(req, res) {
+    async getMyProfile(req, res, next) {
         try {
-            const user = await UserService.getUserById(req.id);
-            res.json(user);
+            const result = await UserService.getUserById(req.id);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(404).json({
-                status: 'error',
-                message: error.message
-            });
+            next(error);
         }
     }
 
-    async updateMyProfile(req, res) {
+    async updateMyProfile(req, res, next) {
         try {
-            const user = await UserService.updateUser(req.id, req.body);
-            res.json(user);
+            const result = await UserService.updateUser(req.id, req.body);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(400).json({
-                status: 'error',
-                message: error.message
-            });
+            next(error);
         }
     }
 
-    async deleteMyProfile(req, res) {
+    async deleteMyProfile(req, res, next) {
         try {
-            await UserService.deleteUser(req.id);
-            res.json({ status: 'success', message: 'User deleted' });
+            const result = await UserService.deleteUser(req.id);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(404).json({
-                status: 'error',
-                message: error.message
-            });
+            next(error);
         }
     }
 
-    async followManga(req, res) {
+    async followManga(req, res, next) {
         try {
             const result = await UserService.followManga(req.id, req.body.mangaId);
-            res.json(result);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(400).json({
-                status: 'error',
-                message: error.message
-            });
+            next(error);
         }
     }
 
-    async unfollowManga(req, res) {
+    async unfollowManga(req, res, next) {
         try {
             const result = await UserService.unfollowManga(req.id, req.body.mangaId);
-            res.json(result);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(400).json({
-                status: 'error',
-                message: error.message
-            });
+            next(error);
         }
     }
 
-    async getMyReadingHistory(req, res) {
+    async getMyReadingHistory(req, res, next) {
         try {
             const result = await UserService.getReadingHistory(req.id);
-            res.json(result);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(404).json({
-                status: 'error',
-                message: error.message
-            });
+            next(error);
         }
     }
 
-    async updateMyReadingHistory(req, res) {
+    async updateMyReadingHistory(req, res, next) {
         try {
             const { manga, chapterId } = req.body;
             const result = await UserService.updateReadingHistory(req.id, manga, chapterId);
-            res.json(result);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(400).json({
-                status: 'error',
-                message: error.message
-            });
+            next(error);
         }
     }
 
-    async getMyUploadedMangas(req, res) {
+    async getMyUploadedMangas(req, res, next) {
         try {
             const result = await UserService.getUploadedMangas(req.id);
-            res.json(result);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(404).json({
-                status: 'error',
-                message: error.message
-            });
+            next(error);
         }
     }
 
-    async getMyFollowedMangas(req, res) {
+    async getMyFollowedMangas(req, res, next) {
         try {
             const result = await UserService.getFollowedMangas(req.id);
-            res.json(result);
+            res.status(200).json(result);
         } catch (error) {
-            return res.status(404).json({
-                status: 'error',
-                message: error.message
-            });
+            next(error);
         }
     }
 

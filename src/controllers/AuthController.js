@@ -2,32 +2,34 @@ const AuthService = require('../services/AuthService');
 const UserService = require('../services/UserService');
 
 class AuthController {
-    async register(req, res) {
-        const userData = req.body;
-        const result = await AuthService.register(userData);
-
-        if (result.status === 'error') {
-            return res.status(422).json(result);
+    async register(req, res, next) {
+        try {
+            const userData = req.body;
+            const result = await AuthService.register(userData);
+            return res.status(201).json(result);
+        } catch (error) {
+            next(error);
         }
-        return res.status(201).json(result);
     }
 
-    async login(req, res) {
-        const { email, password } = req.body;
-        const result = await AuthService.login(email, password);
-        if (result.status === 'error') {
-            return res.status(422).json(result);
+    async login(req, res, next) {
+        try {
+            const { email, password } = req.body;
+            const result = await AuthService.login(email, password);
+            return res.status(200).json(result);
+        } catch (error) {
+            next(error);
         }
-        return res.status(200).json(result);
     }
 
-    async getUserInfo(req, res) {
-        const userId = req.id;
-        const result = await UserService.getUserById(userId);
-        if (result.status === 'error') {
-            return res.status(404).json(result);
+    async getUserInfo(req, res, next) {
+        try {
+            const userId = req.id;
+            const result = await UserService.getUserById(userId);
+            return res.status(200).json(result);
+        } catch (error) {
+            next(error);
         }
-        return res.status(200).json(result);
     }
 }
 

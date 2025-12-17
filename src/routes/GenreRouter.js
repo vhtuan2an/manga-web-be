@@ -197,7 +197,7 @@ module.exports = router;
  *     tags: [Genres]
  *     parameters:
  *       - in: query
- *         name: q
+ *         name: query
  *         schema:
  *           type: string
  *         required: false

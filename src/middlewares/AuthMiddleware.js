@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const ApiError = require("../utils/ApiErrorUtils");
 const dotenv = require("dotenv");
 const User = require("../models/User")
 dotenv.config();
@@ -16,7 +17,7 @@ const authMiddleware = (allowedRoles = []) => {
     console.log("Processed Token:", accessToken);
 
     if (!accessToken) {
-      return res.status(401).json({ error: "Please Login First" });
+      throw new ApiError(401, "Please Login First");
     } else {
       try {
         // Giải mã token
@@ -30,22 +31,18 @@ const authMiddleware = (allowedRoles = []) => {
 
         // Check if user role is allowed
         if (allowedRoles.length && !allowedRoles.includes(req.role)) {
-          return res
-            .status(403)
-            .json({ error: "Access denied: Insufficient permissions" });
+          throw new ApiError(403, "Access denied: Insufficient permissions");
         }
 
         next();
       } catch (error) {
-        if (
-          error.name === "JsonWebTokenError" ||
-          error.name === "TokenExpiredError"
-        ) {
-          return res
-            .status(401)
-            .json({ error: "Invalid or expired token. Please log in again." });
+        if (error.name === "JsonWebTokenError" || error.name === "TokenExpiredError") {
+          next(new ApiError(401, "Invalid or expired token. Please log in again."));
+        } else if (error instanceof ApiError) {
+          next(error);
+        } else {
+          next(new ApiError(500, "Internal server error"));
         }
-        return res.status(500).json({ error: "Internal server error" });
       }
     }
   };
