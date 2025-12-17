@@ -69,7 +69,7 @@ class GoogleAIUtils {
             // Format manga data for AI prompt
             const mangaData = mangas.map(manga => ({
                 id: manga._id,
-                name: manga.name,
+                name: manga.title,
                 description: manga.description,
                 genres: manga.genres.map(g => g.name).join(', ')
             }));
@@ -80,7 +80,7 @@ class GoogleAIUtils {
 
 Và danh sách manga hiện có sau đây:
 ${mangaData.map((manga, index) => 
-    `${index + 1}. Tên: ${manga.name}
+    `${index + 1}. Tên: ${manga.title}
    Thể loại: ${manga.genres}
    Mô tả: ${manga.description}
    ID: ${manga.id}`
