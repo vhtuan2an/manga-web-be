@@ -216,10 +216,84 @@ class UserService {
     }
 
     async getReadingHistory(id) {
-        const user = await User.findById(id).select('readingHistory');
+        const Chapter = require('../models/Chapter');
+        
+        const user = await User.findById(id)
+            .populate({
+                path: 'readingHistory.manga',
+                select: 'title coverImage status chapterCount genres',
+                populate: {
+                    path: 'genres',
+                    select: 'name'
+                }
+            })
+            .populate({
+                path: 'readingHistory.chapterId',
+                select: 'chapterNumber title'
+            });
+
+        if (!user) {
+            return {
+                status: 'error',
+                message: 'User not found'
+            };
+        }
+
+        // Filter valid entries
+        const validHistory = user.readingHistory.filter(h => h.manga && h.chapterId);
+
+        // Get unique manga IDs (already ObjectIds from populated data)
+        const mangaIds = [...new Set(validHistory.map(h => h.manga._id))];
+
+        // Query minimum chapter number for each manga in one aggregation
+        const minChapters = await Chapter.aggregate([
+            { $match: { mangaId: { $in: mangaIds } } },
+            { $group: { _id: '$mangaId', minChapter: { $min: '$chapterNumber' } } }
+        ]);
+
+        // Create a map for quick lookup
+        const minChapterMap = {};
+        minChapters.forEach(item => {
+            minChapterMap[item._id.toString()] = item.minChapter;
+        });
+
+        // Sort by lastReadAt (most recent first) and format the response
+        const formattedHistory = validHistory
+            .sort((a, b) => new Date(b.lastReadAt) - new Date(a.lastReadAt))
+            .map(h => {
+                const minChapter = minChapterMap[h.manga._id.toString()] || 0;
+                const totalChapters = h.manga.chapterCount || 0;
+                const currentChapter = h.chapterId.chapterNumber;
+                
+                // Calculate progress: (current - min + 1) / total * 100
+                // E.g., chapters 0,1 (min=0, total=2): chapter 1 = (1-0+1)/2 = 100%
+                // E.g., chapters 1,2,3 (min=1, total=3): chapter 2 = (2-1+1)/3 = 66%
+                const progress = totalChapters > 0 
+                    ? Math.min(100, Math.round(((currentChapter - minChapter + 1) / totalChapters) * 100))
+                    : 0;
+
+                return {
+                    manga: {
+                        _id: h.manga._id,
+                        title: h.manga.title,
+                        coverImage: h.manga.coverImage,
+                        status: h.manga.status,
+                        totalChapters: totalChapters,
+                        genres: h.manga.genres
+                    },
+                    currentChapter: {
+                        _id: h.chapterId._id,
+                        chapterNumber: currentChapter,
+                        title: h.chapterId.title
+                    },
+                    lastReadAt: h.lastReadAt,
+                    progress: progress
+                };
+            });
+
         return {
             status: 'success',
-            data: user ? user.readingHistory : null
+            data: formattedHistory
         };
     }
 

@@ -576,8 +576,8 @@ module.exports = new UserController();
  * @swagger
  * /api/users/reading-history:
  *   get:
- *     summary: Get my reading history
- *     description: Retrieve the authenticated user's reading history
+ *     summary: Get my reading history with progress
+ *     description: Retrieve the authenticated user's reading history with manga details, current chapter, and reading progress percentage
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -598,18 +598,55 @@ module.exports = new UserController();
  *                     type: object
  *                     properties:
  *                       manga:
- *                         type: string
- *                         description: Manga ID
- *                         example: 692ead72b2d959c9f59833ce
- *                       chapterId:
- *                         type: string
- *                         description: Chapter ID
- *                         example: 674f5678901234abcdef5678
+ *                         type: object
+ *                         description: Populated manga object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                             example: 692ead72b2d959c9f59833ce
+ *                           title:
+ *                             type: string
+ *                             example: One Piece
+ *                           coverImage:
+ *                             type: string
+ *                             example: https://example.com/cover.jpg
+ *                           status:
+ *                             type: string
+ *                             enum: [ongoing, completed]
+ *                             example: ongoing
+ *                           totalChapters:
+ *                             type: number
+ *                             example: 100
+ *                           genres:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 _id:
+ *                                   type: string
+ *                                 name:
+ *                                   type: string
+ *                                   example: Action
+ *                       currentChapter:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                             example: 674f5678901234abcdef5678
+ *                           chapterNumber:
+ *                             type: number
+ *                             example: 50
+ *                           title:
+ *                             type: string
+ *                             example: Chapter 50 - The Battle
  *                       lastReadAt:
  *                         type: string
  *                         format: date-time
- *                         description: Last read timestamp
- *                         example: 2024-12-02T14:30:00.000Z
+ *                         example: 2024-12-19T10:30:00.000Z
+ *                       progress:
+ *                         type: number
+ *                         description: Reading progress percentage (currentChapter - minChapter + 1) / totalChapters * 100
+ *                         example: 50
  *       401:
  *         description: Unauthorized
  *       404:
