@@ -13,6 +13,7 @@ router.delete('/profile', authMiddleware(['reader', 'uploader', 'admin']), UserC
 
 router.post('/follow', authMiddleware(['reader', 'uploader', 'admin']), UserController.followManga);
 router.post('/unfollow', authMiddleware(['reader', 'uploader', 'admin']), UserController.unfollowManga);
+router.post('/unfollow-batch', authMiddleware(['reader', 'uploader', 'admin']), UserController.unfollowMangaBatch);
 router.get('/followed-mangas', authMiddleware(['reader', 'uploader', 'admin']), UserController.getMyFollowedMangas);
 
 router.get('/reading-history', authMiddleware(['reader', 'uploader', 'admin']), UserController.getMyReadingHistory);
@@ -351,6 +352,59 @@ module.exports = router;
  *         description: Bad request - Invalid manga ID
  *       401:
  *         description: Unauthorized
+ */
+
+/**
+ * @swagger
+ * /api/users/unfollow-batch:
+ *   post:
+ *     summary: Unfollow multiple mangas at once
+ *     description: Remove multiple mangas from the authenticated user's followed list in a single request
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - mangaIds
+ *             properties:
+ *               mangaIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of manga IDs to unfollow
+ *                 example: ["692ead72b2d959c9f59833ce", "692ead72b2d959c9f59833cf", "692ead72b2d959c9f59833d0"]
+ *     responses:
+ *       200:
+ *         description: Mangas unfollowed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Successfully unfollowed 3 manga(s)
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     unfollowedCount:
+ *                       type: number
+ *                       description: Number of mangas that were actually unfollowed
+ *                       example: 3
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request - mangaIds must be a non-empty array
+ *       401:
+ *         description: Unauthorized - Token missing or invalid
  */
 
 /**

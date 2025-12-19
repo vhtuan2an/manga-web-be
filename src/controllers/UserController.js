@@ -57,6 +57,15 @@ class UserController {
         }
     }
 
+    async unfollowMangaBatch(req, res, next) {
+        try {
+            const result = await UserService.unfollowMangaBatch(req.id, req.body.mangaIds);
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
     async getMyReadingHistory(req, res, next) {
         try {
             const result = await UserService.getReadingHistory(req.id);

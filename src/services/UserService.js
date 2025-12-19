@@ -148,6 +148,61 @@ class UserService {
         };
     }
 
+    async unfollowMangaBatch(userId, mangaIds) {
+        // Validate that mangaIds is a non-empty array
+        if (!Array.isArray(mangaIds) || mangaIds.length === 0) {
+            throw new Error('mangaIds must be a non-empty array');
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Filter to get only manga IDs that user is actually following
+        const followedMangaStrings = user.followedMangas.map(m => m.toString());
+        const validMangaIds = mangaIds.filter(id => followedMangaStrings.includes(id.toString()));
+
+        if (validMangaIds.length === 0) {
+            return {
+                status: 'success',
+                message: 'No manga to unfollow',
+                data: {
+                    unfollowedCount: 0,
+                    user: user
+                }
+            };
+        }
+
+        // Remove all valid manga IDs from user's followedMangas
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { $pull: { followedMangas: { $in: validMangaIds } } },
+            { new: true }
+        );
+
+        // Decrement followedCount for each affected manga
+        await Manga.updateMany(
+            { _id: { $in: validMangaIds } },
+            { $inc: { followedCount: -1 } }
+        );
+
+        // Ensure followedCount doesn't go below 0
+        await Manga.updateMany(
+            { _id: { $in: validMangaIds }, followedCount: { $lt: 0 } },
+            { $set: { followedCount: 0 } }
+        );
+
+        return {
+            status: 'success',
+            message: `Successfully unfollowed ${validMangaIds.length} manga(s)`,
+            data: {
+                unfollowedCount: validMangaIds.length,
+                user: updatedUser
+            }
+        };
+    }
+
     async updateReadingHistory(id, manga, chapterId) {
         const user = await User.findById(id);
         if (!user) return null;
