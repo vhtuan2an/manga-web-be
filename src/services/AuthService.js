@@ -1,7 +1,9 @@
 const User = require('../models/User');
+const PasswordResetOTP = require('../models/PasswordResetOTP');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const ApiError = require('../utils/ApiErrorUtils');
+const EmailService = require('./EmailService');
 
 class AuthService {
     async register(userData) {
@@ -120,6 +122,109 @@ class AuthService {
             data: user
         };
     }
+
+    // Generate 6-digit OTP
+    generateOTP() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    async forgotPassword(email) {
+        // Check if user exists
+        const user = await User.findOne({ email });
+        if (!user) {
+            throw new ApiError(404, 'Không tìm thấy tài khoản với email này');
+        }
+
+        // Delete any existing OTPs for this email
+        await PasswordResetOTP.deleteMany({ email });
+
+        // Generate new OTP
+        const otp = this.generateOTP();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        // Save OTP to database
+        const otpRecord = new PasswordResetOTP({
+            email,
+            otp,
+            expiresAt,
+            verified: false
+        });
+        await otpRecord.save();
+
+        // Send OTP via email
+        await EmailService.sendOTPEmail(email, otp);
+
+        return {
+            status: 'success',
+            message: 'Mã OTP đã được gửi đến email của bạn'
+        };
+    }
+
+    async verifyOTP(email, otp) {
+        // Find OTP record
+        const otpRecord = await PasswordResetOTP.findOne({
+            email,
+            otp,
+            expiresAt: { $gt: new Date() }
+        });
+
+        if (!otpRecord) {
+            throw new ApiError(400, 'Mã OTP không hợp lệ hoặc đã hết hạn');
+        }
+
+        // Mark as verified
+        otpRecord.verified = true;
+        await otpRecord.save();
+
+        return {
+            status: 'success',
+            message: 'Xác thực OTP thành công'
+        };
+    }
+
+    async resetPassword(email, otp, newPassword, confirmPassword) {
+        // Validate passwords match
+        if (newPassword !== confirmPassword) {
+            throw new ApiError(400, 'Mật khẩu xác nhận không khớp');
+        }
+
+        // Validate password length
+        if (newPassword.length < 6) {
+            throw new ApiError(400, 'Mật khẩu phải có ít nhất 6 ký tự');
+        }
+
+        // Find verified OTP record
+        const otpRecord = await PasswordResetOTP.findOne({
+            email,
+            otp,
+            verified: true,
+            expiresAt: { $gt: new Date() }
+        });
+
+        if (!otpRecord) {
+            throw new ApiError(400, 'OTP chưa được xác thực hoặc đã hết hạn');
+        }
+
+        // Find user and update password
+        const user = await User.findOne({ email });
+        if (!user) {
+            throw new ApiError(404, 'Không tìm thấy tài khoản');
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        // Delete used OTP
+        await PasswordResetOTP.deleteMany({ email });
+
+        return {
+            status: 'success',
+            message: 'Đặt lại mật khẩu thành công'
+        };
+    }
 }
 
 module.exports = new AuthService();
+
