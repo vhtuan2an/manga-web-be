@@ -86,6 +86,37 @@ class SearchLogController {
             next(error);
         }
     }
+
+    /**
+     * Get full training data with session linking (admin only)
+     * GET /api/search-logs/full-training-data
+     */
+    async getFullTrainingData(req, res, next) {
+        try {
+            const { limit = 10000 } = req.query;
+            const result = await SearchLogService.getFullTrainingData(parseInt(limit));
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    /**
+     * Get zero-result queries for analysis (admin only)
+     * GET /api/search-logs/zero-results
+     */
+    async getZeroResultQueries(req, res, next) {
+        try {
+            const { limit = 100, days = 30 } = req.query;
+            const result = await SearchLogService.getZeroResultQueries(
+                parseInt(limit),
+                parseInt(days)
+            );
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new SearchLogController();

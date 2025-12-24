@@ -1,16 +1,19 @@
 const express = require("express");
 const SearchLogController = require("../controllers/SearchLogController");
 const { authMiddleware } = require("../middlewares/AuthMiddleware");
+const { optionalAuthMiddleware } = require("../middlewares/OptionalAuthMiddleware");
 
 const router = express.Router();
 
 // Public endpoint - log search result clicks (works for both logged in and anonymous users)
-router.post("/click", SearchLogController.logClick);
+router.post("/click", optionalAuthMiddleware, SearchLogController.logClick);
 
 // Admin only - analytics and training data
 router.get("/popular", authMiddleware(["admin"]), SearchLogController.getPopularQueries);
 router.get("/training-data", authMiddleware(["admin"]), SearchLogController.getTrainingData);
 router.get("/training-data/csv", authMiddleware(["admin"]), SearchLogController.exportTrainingDataCSV);
+router.get("/full-training-data", authMiddleware(["admin"]), SearchLogController.getFullTrainingData);
+router.get("/zero-results", authMiddleware(["admin"]), SearchLogController.getZeroResultQueries);
 
 module.exports = router;
 
