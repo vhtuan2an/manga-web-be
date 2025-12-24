@@ -5,6 +5,7 @@ const Genre = require("../models/Genre");
 const Chapter = require("../models/Chapter");
 const Report = require("../models/Report");
 const User = require("../models/User");
+const SearchLogService = require("./SearchLogService");
 
 class MangaService {
   // Helper function to extract public ID from Cloudinary URL to delete images
@@ -179,7 +180,7 @@ class MangaService {
     }
   }
 
-  async searchManga(searchParams = {}) {
+  async searchManga(searchParams = {}, userId = null, sessionId = null) {
     try {
       const {
         page = 1,
@@ -274,6 +275,11 @@ class MangaService {
       // Get total count for pagination
       const totalItems = await Manga.countDocuments(query);
       const totalPages = Math.ceil(totalItems / limitNum);
+
+      // Log search query for ML training (non-blocking)
+      if (search && search.trim() !== "") {
+        SearchLogService.logSearch(search, totalItems, userId, sessionId).catch(() => {});
+      }
 
       return {
         status: "success",

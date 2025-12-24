@@ -90,7 +90,10 @@ class MangaController {
 
     async searchManga(req, res, next) {
         try {
-            const result = await MangaService.searchManga(req.query);
+            const userId = req.id || null; // From auth middleware if logged in
+            const sessionId = req.headers["x-session-id"] || null;
+
+            const result = await MangaService.searchManga(req.query, userId, sessionId);
 
             res.status(200).json(result);
         } catch (error) {

@@ -8,6 +8,7 @@ const RatingRouter = require('./RatingRouter');
 const AIRouter = require('./AIRouter');
 const ReportRouter = require('./ReportRouter');
 const StatisticsRouter = require('./StatisticsRouter');
+const SearchLogRouter = require('./SearchLogRouter');
 
 const routes = (app) => {
     app.use('/api/auth', AuthRouter);
@@ -20,6 +21,7 @@ const routes = (app) => {
     app.use('/api/ai', AIRouter);
     app.use('/api/reports', ReportRouter);
     app.use('/api/statistics', StatisticsRouter);
+    app.use('/api/search-logs', SearchLogRouter);
 };
 
 module.exports = routes;
