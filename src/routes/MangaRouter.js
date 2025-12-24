@@ -13,6 +13,7 @@ router.get('/:id', MangaController.getMangaById);
 router.put('/:id', authMiddleware(['uploader']), uploadSingle, checkMangaOwnership, MangaController.updateManga);
 router.delete('/:id', authMiddleware(['admin', 'uploader']), checkMangaOwnership, MangaController.deleteManga);
 router.get('/:mangaId/chapters', MangaController.getChapterList);
+router.get('/:id/recommendations', MangaController.getRecommendations);
 router.get('/count/genre/:genreId', MangaController.getMangaCountByGenre);
 
 module.exports = router;
@@ -424,4 +425,57 @@ module.exports = router;
  *                   example: Genre not found
  *       500:
  *         description: Internal server error
+ */
+
+/**
+ * @swagger
+ * /api/mangas/{id}/recommendations:
+ *   get:
+ *     summary: Get manga recommendations
+ *     description: Get recommended manga based on what other users read after this manga (collaborative filtering). Falls back to genre-based recommendations if insufficient data.
+ *     tags: [Manga]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Manga ID to get recommendations for
+ *         example: 64f8a1b2c3d4e5f6a7b8c9d0
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Maximum number of recommendations to return
+ *     responses:
+ *       200:
+ *         description: List of recommended manga
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     manga:
+ *                       type: object
+ *                       properties:
+ *                         _id:
+ *                           type: string
+ *                         title:
+ *                           type: string
+ *                     recommendations:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Manga'
+ *                     totalRecommendations:
+ *                       type: integer
+ *                       example: 10
+ *       404:
+ *         description: Manga not found
  */

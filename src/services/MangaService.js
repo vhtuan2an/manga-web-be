@@ -423,6 +423,121 @@ class MangaService {
       };
     }
   }
+
+  async getRecommendations(mangaId, limit = 10) {
+    try {
+      // Validate manga ID
+      if (!mongoose.Types.ObjectId.isValid(mangaId)) {
+        return {
+          status: "error",
+          message: "Invalid manga ID",
+        };
+      }
+
+      // Check if manga exists
+      const manga = await Manga.findById(mangaId);
+      if (!manga) {
+        return {
+          status: "error",
+          message: "Manga not found",
+        };
+      }
+
+      const limitNum = parseInt(limit);
+
+      // Find users who have this manga in their reading history
+      // and get manga they read AFTER this one (collaborative filtering)
+      const usersWithManga = await User.find({
+        "readingHistory.manga": new mongoose.Types.ObjectId(mangaId),
+      }).select("readingHistory");
+
+      // Count frequency of manga read after the target manga
+      const mangaFrequency = {};
+
+      for (const user of usersWithManga) {
+        // Sort reading history by lastReadAt
+        const sortedHistory = [...user.readingHistory].sort(
+          (a, b) => new Date(a.lastReadAt) - new Date(b.lastReadAt)
+        );
+
+        // Find index of the target manga in this user's history
+        const targetIndex = sortedHistory.findIndex(
+          (item) => item.manga && item.manga.toString() === mangaId.toString()
+        );
+
+        if (targetIndex !== -1 && targetIndex < sortedHistory.length - 1) {
+          // Get manga read after the target manga
+          for (let i = targetIndex + 1; i < sortedHistory.length; i++) {
+            const nextMangaId = sortedHistory[i].manga?.toString();
+            if (nextMangaId && nextMangaId !== mangaId.toString()) {
+              mangaFrequency[nextMangaId] = (mangaFrequency[nextMangaId] || 0) + 1;
+            }
+          }
+        }
+      }
+
+      // Sort by frequency and get top manga IDs
+      const sortedMangaIds = Object.entries(mangaFrequency)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limitNum)
+        .map(([id]) => id);
+
+      let recommendations = [];
+
+      if (sortedMangaIds.length > 0) {
+        // Fetch manga details for recommendations
+        recommendations = await Manga.find({
+          _id: { $in: sortedMangaIds },
+        })
+          .populate("genres", "name")
+          .populate("uploaderId", "username")
+          .lean();
+
+        // Sort recommendations by frequency order
+        recommendations.sort((a, b) => {
+          return (
+            sortedMangaIds.indexOf(a._id.toString()) -
+            sortedMangaIds.indexOf(b._id.toString())
+          );
+        });
+      }
+
+      // Fallback: if not enough recommendations, add manga with same genres
+      if (recommendations.length < limitNum && manga.genres.length > 0) {
+        const existingIds = recommendations.map((m) => m._id.toString());
+        existingIds.push(mangaId.toString());
+
+        const fallbackMangas = await Manga.find({
+          _id: { $nin: existingIds.map((id) => new mongoose.Types.ObjectId(id)) },
+          genres: { $in: manga.genres },
+        })
+          .populate("genres", "name")
+          .populate("uploaderId", "username")
+          .sort({ averageRating: -1, viewCount: -1 })
+          .limit(limitNum - recommendations.length)
+          .lean();
+
+        recommendations = [...recommendations, ...fallbackMangas];
+      }
+
+      return {
+        status: "success",
+        data: {
+          manga: {
+            _id: manga._id,
+            title: manga.title,
+          },
+          recommendations,
+          totalRecommendations: recommendations.length,
+        },
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        message: "Failed to get recommendations: " + error.message,
+      };
+    }
+  }
 }
 
 module.exports = new MangaService();
