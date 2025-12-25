@@ -281,6 +281,35 @@ class ChapterService {
                 }
             }
 
+            // Handle page deletion
+            let remainingPages = [...chapter.pages];
+            if (chapterData.pagesToDelete) {
+                try {
+                    const pagesToDelete = JSON.parse(chapterData.pagesToDelete);
+                    if (Array.isArray(pagesToDelete) && pagesToDelete.length > 0) {
+                        console.log(`Deleting pages: ${pagesToDelete.join(', ')}`);
+                        
+                        // Delete images from Cloudinary (in background)
+                        const pagesToRemove = chapter.pages.filter(p => pagesToDelete.includes(p.pageNumber));
+                        this.deleteOldImages(pagesToRemove);
+                        
+                        // Remove from pages array
+                        remainingPages = chapter.pages.filter(p => !pagesToDelete.includes(p.pageNumber));
+                        
+                        // Re-number remaining pages
+                        remainingPages = remainingPages.map((page, index) => ({
+                            pageNumber: index + 1,
+                            image: page.image
+                        }));
+                        
+                        console.log(`Remaining pages after deletion: ${remainingPages.length}`);
+                        updateData.pages = remainingPages;
+                    }
+                } catch (parseError) {
+                    console.error('Failed to parse pagesToDelete:', parseError);
+                }
+            }
+
             // Update pages if new files are provided
             if (files && files.length > 0) {
                 // Validate file sizes
@@ -294,10 +323,7 @@ class ChapterService {
                     }
                 }
 
-                console.log(`Updating chapter with ${files.length} new images...`);
-
-                // Delete old images from Cloudinary (in background)
-                this.deleteOldImages(chapter.pages);
+                console.log(`Uploading ${files.length} new images...`);
 
                 // Sort new files by page number
                 const sortedFiles = files.sort((a, b) => {
@@ -308,7 +334,8 @@ class ChapterService {
 
                 // Upload new images with batch processing
                 const batchSize = 15;
-                const pages = [];
+                const newPages = [];
+                const startPageNumber = remainingPages.length + 1;
                 
                 for (let i = 0; i < sortedFiles.length; i += batchSize) {
                     const batch = sortedFiles.slice(i, i + batchSize);
@@ -316,7 +343,7 @@ class ChapterService {
                     
                     const batchPromises = batch.map(async (file, batchIndex) => {
                         const actualIndex = i + batchIndex;
-                        const pageNumber = actualIndex + 1;
+                        const pageNumber = startPageNumber + actualIndex;
                         const fileName = `${chapter.mangaId._id}_chapter_${updateData.chapterNumber || chapter.chapterNumber}_page_${pageNumber.toString().padStart(2, '0')}`;
                         
                         const uploadResult = await this.uploadWithRetry(
@@ -333,16 +360,19 @@ class ChapterService {
                     });
 
                     const batchResults = await Promise.all(batchPromises);
-                    pages.push(...batchResults);
+                    newPages.push(...batchResults);
                 }
 
-                // Sort pages by page number
-                pages.sort((a, b) => a.pageNumber - b.pageNumber);
-                updateData.pages = pages;
+                // Sort new pages by page number
+                newPages.sort((a, b) => a.pageNumber - b.pageNumber);
+                
+                // Combine remaining pages with new pages
+                updateData.pages = [...remainingPages, ...newPages];
+                console.log(`Total pages after update: ${updateData.pages.length}`);
 
                 // If no thumbnail was set and pages updated, use first page as thumbnail
-                if (!updateData.thumbnail && pages.length > 0) {
-                    updateData.thumbnail = pages[0].image;
+                if (!updateData.thumbnail && updateData.pages.length > 0) {
+                    updateData.thumbnail = updateData.pages[0].image;
                 }
             }
 
