@@ -6,6 +6,7 @@ const Chapter = require("../models/Chapter");
 const Report = require("../models/Report");
 const User = require("../models/User");
 const SearchLogService = require("./SearchLogService");
+const MLSearchService = require("./MLSearchService");
 
 class MangaService {
   // Helper function to extract public ID from Cloudinary URL to delete images
@@ -189,12 +190,36 @@ class MangaService {
         status,
         genres,
         sortBy = "newest",
+        useML = true, // Enable ML search by default
       } = searchParams;
 
       const query = {};
+      let mlRankedIds = null; // Will store ML-ranked manga IDs if available
+      let mlScores = {};
 
-      // Search by title or author
-      if (search && search.trim() !== "") {
+      // Try ML semantic search first (if search query exists)
+      if (useML && search && search.trim() !== "") {
+        const mlResult = await MLSearchService.search(search.trim(), 100);
+        
+        if (mlResult.success && mlResult.mangaIds.length > 0) {
+          // Use ML results - filter by manga IDs
+          mlRankedIds = mlResult.mangaIds;
+          mlScores = mlResult.scores;
+          console.log(`[Search] Using ML results: ${mlRankedIds.length} candidates`);
+        } else {
+          console.log(`[Search] ML unavailable, falling back to regex`);
+        }
+      }
+
+      // Build query based on ML results or fallback to regex
+      if (mlRankedIds && mlRankedIds.length > 0) {
+        // Filter by ML-ranked manga IDs
+        const validIds = mlRankedIds
+          .filter(id => mongoose.Types.ObjectId.isValid(id))
+          .map(id => new mongoose.Types.ObjectId(id));
+        query._id = { $in: validIds };
+      } else if (search && search.trim() !== "") {
+        // Fallback: regex search
         query.$or = [
           { title: { $regex: search.trim(), $options: "i" } },
           { author: { $regex: search.trim(), $options: "i" } },
@@ -228,52 +253,82 @@ class MangaService {
         }
       }
 
-      // Parse sort options
+      // Parse sort options (only used when not using ML ranking)
       let sortOptions = {};
-      switch (sortBy) {
-        case "newest":
-          sortOptions.createdAt = -1;
-          break;
-        case "oldest":
-          sortOptions.createdAt = 1;
-          break;
-        case "mostViewed":
-          sortOptions.viewCount = -1;
-          break;
-        case "highestRating":
-          sortOptions.averageRating = -1;
-          break;
-        case "mostFollowed":
-          sortOptions.followedCount = -1;
-          break;
-        case "az":
-          sortOptions.title = 1;
-          break;
-        case "za":
-          sortOptions.title = -1;
-          break;
-        case "updated":
-          sortOptions.updatedAt = -1;
-          break;
-        default:
-          sortOptions.createdAt = -1; // Default to newest
+      const useMLSort = mlRankedIds && mlRankedIds.length > 0;
+      
+      if (!useMLSort) {
+        switch (sortBy) {
+          case "newest":
+            sortOptions.createdAt = -1;
+            break;
+          case "oldest":
+            sortOptions.createdAt = 1;
+            break;
+          case "mostViewed":
+            sortOptions.viewCount = -1;
+            break;
+          case "highestRating":
+            sortOptions.averageRating = -1;
+            break;
+          case "mostFollowed":
+            sortOptions.followedCount = -1;
+            break;
+          case "az":
+            sortOptions.title = 1;
+            break;
+          case "za":
+            sortOptions.title = -1;
+            break;
+          case "updated":
+            sortOptions.updatedAt = -1;
+            break;
+          default:
+            sortOptions.createdAt = -1; // Default to newest
+        }
       }
 
       const pageNum = parseInt(page);
       const limitNum = parseInt(limit);
-      const skip = (pageNum - 1) * limitNum;
 
-      // Execute query with pagination
-      const mangas = await Manga.find(query)
-        .populate("genres", "name")
-        .populate("uploaderId", "username")
-        .skip(skip)
-        .limit(limitNum)
-        .sort(sortOptions)
-        .lean();
+      // Execute query
+      let mangas;
+      let totalItems;
 
-      // Get total count for pagination
-      const totalItems = await Manga.countDocuments(query);
+      if (useMLSort) {
+        // Get all matching mangas (we'll sort and paginate in JS)
+        mangas = await Manga.find(query)
+          .populate("genres", "name")
+          .populate("uploaderId", "username")
+          .lean();
+
+        // Sort by ML relevance score
+        mangas.sort((a, b) => {
+          const scoreA = mlScores[a._id.toString()] || 0;
+          const scoreB = mlScores[b._id.toString()] || 0;
+          return scoreB - scoreA;
+        });
+
+        totalItems = mangas.length;
+
+        // Apply pagination manually
+        const skip = (pageNum - 1) * limitNum;
+        mangas = mangas.slice(skip, skip + limitNum);
+      } else {
+        // Standard MongoDB query with pagination
+        const skip = (pageNum - 1) * limitNum;
+        
+        mangas = await Manga.find(query)
+          .populate("genres", "name")
+          .populate("uploaderId", "username")
+          .skip(skip)
+          .limit(limitNum)
+          .sort(sortOptions)
+          .lean();
+
+        totalItems = await Manga.countDocuments(query);
+      }
+
       const totalPages = Math.ceil(totalItems / limitNum);
 
       // Log search query for ML training (non-blocking)
@@ -291,6 +346,7 @@ class MangaService {
             totalItems,
             limit: limitNum,
           },
+          searchMethod: useMLSort ? "ml" : "regex", // Indicate which method was used
         },
       };
     } catch (error) {
