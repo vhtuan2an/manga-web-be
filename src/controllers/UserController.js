@@ -14,7 +14,7 @@ class UserController {
     // User operations (uses req.id from authMiddleware)
     async getMyProfile(req, res, next) {
         try {
-            const result = await UserService.getUserById(req.id);
+            const result = await UserService.getUserProfile(req.id);
             res.status(200).json(result);
         } catch (error) {
             next(error);
@@ -79,6 +79,16 @@ class UserController {
         try {
             const { manga, chapterId } = req.body;
             const result = await UserService.updateReadingHistory(req.id, manga, chapterId);
+            res.status(200).json(result);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async deleteMyReadingHistoryBatch(req, res, next) {
+        try {
+            const { mangaIds } = req.body;
+            const result = await UserService.deleteReadingHistoryBatch(req.id, mangaIds);
             res.status(200).json(result);
         } catch (error) {
             next(error);
@@ -217,6 +227,10 @@ module.exports = new UserController();
  *                 type: string
  *                 format: date-time
  *                 description: Last read timestamp
+ *               progress:
+ *                 type: number
+ *                 description: Reading progress percentage
+ *                 example: 50
  *         createdAt:
  *           type: string
  *           format: date-time

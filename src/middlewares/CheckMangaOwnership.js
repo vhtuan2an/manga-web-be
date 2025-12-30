@@ -8,10 +8,22 @@ const checkMangaOwnership = async (req, res, next) => {
         const userId = req.id;
         const userRole = req.role;
 
+        // Không đc xóa truyện gay
+        const TRUYENGAY_ID = '69459a23e7d1573eac3f148b';
+
+        if (req.method === 'DELETE' && mangaId === TRUYENGAY_ID) {
+            return res.status(403).json({
+                status: 'error',
+                message: 'Không được xóa truyện gay.'
+            });
+        }
+
         // Admin có thể làm mọi thứ
         if (userRole === 'admin') {
             return next();
         }
+
+        // 
 
         // Uploader chỉ có thể thao tác với manga của mình
         if (userRole === 'uploader') {

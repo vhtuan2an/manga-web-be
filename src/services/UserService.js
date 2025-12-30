@@ -54,6 +54,80 @@ class UserService {
         }
     }
 
+    async getUserProfile(id) {
+        const Chapter = require('../models/Chapter');
+        const user = await User.findById(id).select('-password').lean();
+
+        if (!user) {
+            return {
+                status: 'error',
+                message: 'User not found'
+            };
+        }
+
+        if (user.readingHistory && user.readingHistory.length > 0) {
+            // Filter valid entries
+            const validHistory = user.readingHistory.filter(h => h.manga && h.chapterId);
+            const mangaIds = [...new Set(validHistory.map(h => h.manga))];
+            const chapterIds = validHistory.map(h => h.chapterId);
+
+            // Fetch needed data
+            const [mangas, chapters, minChapters] = await Promise.all([
+                Manga.find({ _id: { $in: mangaIds } }).select('chapterCount'),
+                Chapter.find({ _id: { $in: chapterIds } }).select('chapterNumber'),
+                Chapter.aggregate([
+                    { $match: { mangaId: { $in: mangaIds } } },
+                    { $group: { _id: '$mangaId', minChapter: { $min: '$chapterNumber' } } }
+                ])
+            ]);
+
+            const mangaMap = {};
+            mangas.forEach(m => mangaMap[m._id.toString()] = m);
+
+            const chapterMap = {};
+            chapters.forEach(c => chapterMap[c._id.toString()] = c);
+
+            const minChapterMap = {};
+            minChapters.forEach(item => {
+                minChapterMap[item._id.toString()] = item.minChapter;
+            });
+
+            // Calculate progress
+            user.readingHistory = validHistory.map(h => {
+                const mangaIdStr = h.manga.toString();
+                const chapterIdStr = h.chapterId.toString();
+
+                const manga = mangaMap[mangaIdStr];
+                const chapter = chapterMap[chapterIdStr];
+                const minChapter = minChapterMap[mangaIdStr] || 0;
+
+                let progress = 0;
+                if (manga && chapter) {
+                    const totalChapters = manga.chapterCount || 0;
+                    const currentChapterNum = chapter.chapterNumber;
+                    progress = totalChapters > 0
+                        ? Math.min(100, Math.round(((currentChapterNum - minChapter + 1) / totalChapters) * 100))
+                        : 0;
+                }
+
+                // eslint-disable-next-line no-unused-vars
+                const { _id, ...rest } = h;
+                return {
+                    ...rest,
+                    progress
+                };
+            });
+
+            // Sort by lastReadAt desc
+            user.readingHistory.sort((a, b) => new Date(b.lastReadAt) - new Date(a.lastReadAt));
+        }
+
+        return {
+            status: 'success',
+            data: user
+        };
+    }
+
     async getUserById(id) {
         const user = await User.findById(id).select('-password');
         return {
@@ -215,9 +289,43 @@ class UserService {
         };
     }
 
+    async deleteReadingHistoryBatch(userId, mangaIds) {
+        if (!Array.isArray(mangaIds) || mangaIds.length === 0) {
+            throw new Error('mangaIds must be a non-empty array');
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        const initialCount = user.readingHistory.length;
+
+        // Remove entries where manga ID is in the provided list
+        user.readingHistory = user.readingHistory.filter(
+            h => !mangaIds.includes(h.manga.toString())
+        );
+
+        const finalCount = user.readingHistory.length;
+        const deletedCount = initialCount - finalCount;
+
+        if (deletedCount > 0) {
+            await user.save();
+        }
+
+        return {
+            status: 'success',
+            message: `Successfully deleted ${deletedCount} reading history item(s)`,
+            data: {
+                deletedCount,
+                user
+            }
+        };
+    }
+
     async getReadingHistory(id) {
         const Chapter = require('../models/Chapter');
-        
+
         const user = await User.findById(id)
             .populate({
                 path: 'readingHistory.manga',
@@ -264,11 +372,11 @@ class UserService {
                 const minChapter = minChapterMap[h.manga._id.toString()] || 0;
                 const totalChapters = h.manga.chapterCount || 0;
                 const currentChapter = h.chapterId.chapterNumber;
-                
+
                 // Calculate progress: (current - min + 1) / total * 100
                 // E.g., chapters 0,1 (min=0, total=2): chapter 1 = (1-0+1)/2 = 100%
                 // E.g., chapters 1,2,3 (min=1, total=3): chapter 2 = (2-1+1)/3 = 66%
-                const progress = totalChapters > 0 
+                const progress = totalChapters > 0
                     ? Math.min(100, Math.round(((currentChapter - minChapter + 1) / totalChapters) * 100))
                     : 0;
 

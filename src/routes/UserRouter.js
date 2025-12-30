@@ -18,6 +18,7 @@ router.get('/followed-mangas', authMiddleware(['reader', 'uploader', 'admin']), 
 
 router.get('/reading-history', authMiddleware(['reader', 'uploader', 'admin']), UserController.getMyReadingHistory);
 router.post('/reading-history', authMiddleware(['reader', 'uploader', 'admin']), UserController.updateMyReadingHistory);
+router.post('/reading-history/batch-delete', authMiddleware(['reader', 'uploader', 'admin']), UserController.deleteMyReadingHistoryBatch);
 
 router.get('/uploaded-mangas', authMiddleware(['uploader', 'admin']), UserController.getMyUploadedMangas);
 
@@ -549,6 +550,57 @@ module.exports = router;
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request - Invalid data
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @swagger
+ * /api/users/reading-history/batch-delete:
+ *   post:
+ *     summary: Delete multiple reading history items
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - mangaIds
+ *             properties:
+ *               mangaIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of manga IDs to remove from reading history
+ *                 example: ["692ead72b2d959c9f59833ce", "692ead72b2d959c9f59833cf"]
+ *     responses:
+ *       200:
+ *         description: Reading history items deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Successfully deleted 2 reading history item(s)
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     deletedCount:
+ *                       type: number
+ *                       example: 2
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
  *       400:
  *         description: Bad request - Invalid data
  *       401:
