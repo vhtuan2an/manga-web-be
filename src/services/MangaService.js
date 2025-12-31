@@ -425,7 +425,7 @@ class MangaService {
   async getChapterList(mangaId) {
     try {
       const chapters = await Chapter.find({ mangaId: mangaId })
-        .select("title chapterNumber _id thumbnail pages createdAt updatedAt")
+        .select("title chapterNumber _id thumbnail createdAt updatedAt")
         .sort({ chapterNumber: 1 })
         .lean();
       if (!chapters) {
