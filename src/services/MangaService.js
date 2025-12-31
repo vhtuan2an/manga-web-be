@@ -424,11 +424,22 @@ class MangaService {
 
   async getChapterList(mangaId) {
     try {
-      const chapters = await Chapter.find({ mangaId: mangaId })
-        .select("title chapterNumber _id thumbnail createdAt updatedAt")
-        .sort({ chapterNumber: 1 })
-        .lean();
-      if (!chapters) {
+      const chapters = await Chapter.aggregate([
+        { $match: { mangaId: new mongoose.Types.ObjectId(mangaId) } },
+        {
+          $project: {
+            title: 1,
+            chapterNumber: 1,
+            thumbnail: 1,
+            createdAt: 1,
+            updatedAt: 1,
+            pageCount: { $size: { $ifNull: ["$pages", []] } }
+          }
+        },
+        { $sort: { chapterNumber: 1 } }
+      ]);
+      
+      if (!chapters || chapters.length === 0) {
         return {
           status: "error",
           message: "No chapters found for this manga",
