@@ -109,6 +109,32 @@ class ReportService {
       };
     }
   }
+
+  async resolveReport(reportId) {
+    try {
+      const report = await Report.findById(reportId);
+      if (!report) {
+        return {
+          status: "error",
+          message: "Report not found",
+        };
+      }
+
+      report.status = "resolved";
+      await report.save();
+
+      return {
+        status: "success",
+        message: "Report resolved successfully",
+        data: report,
+      };
+    } catch (error) {
+      return {
+        status: "error",
+        message: "Failed to resolve report: " + error.message,
+      };
+    }
+  }
 }
 
 module.exports = new ReportService();

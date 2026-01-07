@@ -27,6 +27,12 @@ router.delete(
   ReportController.deleteReport
 );
 
+router.patch(
+  "/:reportId/resolve",
+  authMiddleware(["admin"]),
+  ReportController.resolveReport
+);
+
 module.exports = router;
 
 /**
@@ -301,6 +307,44 @@ module.exports = router;
  *                 message:
  *                   type: string
  *                   example: Report deleted successfully
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Admin access required
+ *       404:
+ *         description: Report not found
+ */
+
+/**
+ * @swagger
+ * /api/reports/{reportId}/resolve:
+ *   patch:
+ *     summary: Resolve a report (Admin only)
+ *     tags: [Reports]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reportId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Report ID
+ *         example: 6913e5f33e100b12fe4d9d9f
+ *     responses:
+ *       200:
+ *         description: Report resolved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Report resolved successfully
  *       401:
  *         description: Authentication required
  *       403:
