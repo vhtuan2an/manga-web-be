@@ -11,7 +11,7 @@ router.post('/', authMiddleware(['uploader']), uploadSingle, MangaController.cre
 router.get('/', MangaController.getMangaList);
 router.get('/search', optionalAuthMiddleware, MangaController.searchManga);
 router.get('/:id', MangaController.getMangaById);
-router.put('/:id', authMiddleware(['uploader']), uploadSingle, checkMangaOwnership, MangaController.updateManga);
+router.put('/:id', authMiddleware(['admin', 'uploader']), uploadSingle, checkMangaOwnership, MangaController.updateManga);
 router.delete('/:id', authMiddleware(['admin', 'uploader']), checkMangaOwnership, MangaController.deleteManga);
 router.get('/:mangaId/chapters', MangaController.getChapterList);
 router.get('/:id/recommendations', MangaController.getRecommendations);
