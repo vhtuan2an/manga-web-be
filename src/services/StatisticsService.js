@@ -55,7 +55,9 @@ class StatisticsService {
                 completedMangas,
                 hiatusMangas,
                 pendingReports,
-                resolvedReports
+                resolvedReports,
+                totalViewCountResult,
+                top5Genres
             ] = await Promise.all([
                 User.countDocuments(),
                 Manga.countDocuments(),
@@ -65,8 +67,20 @@ class StatisticsService {
                 Manga.countDocuments({ status: 'completed' }),
                 Manga.countDocuments({ status: 'hiatus' }),
                 Report.countDocuments({ status: 'pending' }),
-                Report.countDocuments({ status: 'resolved' })
+                Report.countDocuments({ status: 'resolved' }),
+                Manga.aggregate([{ $group: { _id: null, total: { $sum: "$viewCount" } } }]),
+                Manga.aggregate([
+                    { $unwind: "$genres" },
+                    { $group: { _id: "$genres", totalViews: { $sum: "$viewCount" } } },
+                    { $sort: { totalViews: -1 } },
+                    { $limit: 5 },
+                    { $lookup: { from: "genres", localField: "_id", foreignField: "_id", as: "genre" } },
+                    { $unwind: "$genre" },
+                    { $project: { name: "$genre.name", count: "$totalViews" } }
+                ])
             ]);
+
+            const totalViewCount = totalViewCountResult.length > 0 ? totalViewCountResult[0].total : 0;
 
             return {
                 status: 'success',
@@ -79,9 +93,11 @@ class StatisticsService {
                     },
                     mangas: {
                         total: totalMangas,
+                        totalViewCount: totalViewCount,
                         ongoing: ongoingMangas,
                         completed: completedMangas,
-                        hiatus: hiatusMangas
+                        hiatus: hiatusMangas,
+                        topGenres: top5Genres
                     },
                     reports: {
                         total: totalReports,

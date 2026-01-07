@@ -81,7 +81,7 @@ module.exports = router;
  * /api/statistics/detailed:
  *   get:
  *     summary: Get detailed platform statistics
- *     description: Returns detailed breakdown including manga status and report status (Admin only)
+ *     description: Returns detailed breakdown including manga status, report status, total view count, and top 5 genres (Admin only)
  *     tags: [Statistics]
  *     security:
  *       - bearerAuth: []
@@ -120,6 +120,9 @@ module.exports = router;
  *                         total:
  *                           type: integer
  *                           example: 342
+ *                         totalViewCount:
+ *                           type: integer
+ *                           example: 15430
  *                         ongoing:
  *                           type: integer
  *                           example: 215
@@ -129,6 +132,17 @@ module.exports = router;
  *                         hiatus:
  *                           type: integer
  *                           example: 29
+ *                         topGenres:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               name:
+ *                                 type: string
+ *                                 example: Action
+ *                               count:
+ *                                 type: integer
+ *                                 example: 5420
  *                     reports:
  *                       type: object
  *                       properties:
