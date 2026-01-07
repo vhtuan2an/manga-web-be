@@ -46,7 +46,7 @@ class MangaController {
 
     async updateManga(req, res, next) {
         try {
-            const { id } = req.params;
+            const mangaId = req.params.id;
 
             let updateData = { ...req.body };
 
